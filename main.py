@@ -5,10 +5,11 @@ from __future__ import unicode_literals
 
 import os
 
-import keras
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import flags
+from tensorflow import keras
+from tensorflow.python.keras import backend as k_b
 from datasets import MNISTDataset
 from datasets import get_correct_prediction_idx, evaluate_adversarial_examples, calculate_mean_confidence, \
     calculate_accuracy
@@ -23,7 +24,8 @@ flags.DEFINE_boolean('balance_sampling', False, 'Select the same number of examp
 flags.DEFINE_boolean('test_mode', False, 'Only select one sample for each class.')
 
 flags.DEFINE_string('attacks',
-                    "FGSM?eps=0.1;BIM?eps=0.1&eps_iter=0.02;JSMA?targeted=next;CarliniL2?targeted=next&batch_size=100&max_iterations=1000;CarliniL2?targeted=next&batch_size=100&max_iterations=1000&confidence=2",
+                    "FGSM?eps=0.1;BIM?eps=0.1&eps_iter=0.02;JSMA?targeted=next;CarliniL2?targeted=next&batch_size=100"
+                    "&max_iterations=1000;CarliniL2?targeted=next&batch_size=100&max_iterations=1000&confidence=2",
                     'Attack name and parameters in URL style, separated by semicolon.')
 flags.DEFINE_float('clip', -1, 'L-infinity clip on the adversarial perturbations.')
 flags.DEFINE_boolean('visualize', True, 'Output the image examples for each attack, enabled by default.')
@@ -41,11 +43,11 @@ FLAGS.model_name = FLAGS.model_name.lower()
 
 def load_tf_session():
     # Set TF random seed to improve reproducibility
-    tf.set_random_seed(1234)
+    tf.random.set_seed(1234)
 
     # Create TF session and set as Keras backend session
-    sess = tf.Session()
-    keras.backend.set_session(sess)
+    sess = tf.compat.v1.Session()
+    k_b.set_session(sess)
     print("Created TensorFlow session and set Keras backend.")
     return sess
 
@@ -55,17 +57,18 @@ def main(argv=None):
     dataset = MNISTDataset()
 
     # 1. Load a dataset.
-    print("\n===Loading mnist dataset...")
+    print("\nLoading mnist dataset...")
     X_test_all, Y_test_all = dataset.get_test_dataset()
+    print("\nLoad mnist dataset completed!")
 
     # 2. Load a trained model.
     sess = load_tf_session()
     keras.backend.set_learning_phase(0)
     # Define input TF placeholder
-    x = tf.placeholder(tf.float32, shape=(None, dataset.image_size, dataset.image_size, dataset.num_channels))
-    y = tf.placeholder(tf.float32, shape=(None, dataset.num_classes))
+    x = tf.compat.v1.placeholder(tf.float32, shape=(None, dataset.image_size, dataset.image_size, dataset.num_channels))
+    y = tf.compat.v1.placeholder(tf.float32, shape=(None, dataset.num_classes))
 
-    with tf.variable_scope(FLAGS.model_name):
+    with tf.compat.v1.variable_scope(FLAGS.model_name):
         """
         Create a model instance for prediction.
         The scaling argument, 'input_range_type': {1: [0,1], 2:[-0.5, 0.5], 3:[-1, 1]...}
@@ -78,8 +81,8 @@ def main(argv=None):
     Y_pred_all = model.predict(X_test_all)
     mean_conf_all = calculate_mean_confidence(Y_pred_all, Y_test_all)
     accuracy_all = calculate_accuracy(Y_pred_all, Y_test_all)
-    print('Test accuracy on raw legitimate examples %.4f' % (accuracy_all))
-    print('Mean confidence on ground truth classes %.4f' % (mean_conf_all))
+    print('Test accuracy on raw legitimate examples %.4f' % accuracy_all)
+    print('Mean confidence on ground truth classes %.4f' % mean_conf_all)
 
     # 4. Select some examples to attack.
     import hashlib
@@ -113,20 +116,14 @@ def main(argv=None):
     # The accuracy should be 100%.
     accuracy_selected = calculate_accuracy(Y_pred, Y_test)
     mean_conf_selected = calculate_mean_confidence(Y_pred, Y_test)
-    print('Test accuracy on selected legitimate examples %.4f' % (accuracy_selected))
-    print('Mean confidence on ground truth classes, selected %.4f\n' % (mean_conf_selected))
+    print('Test accuracy on selected legitimate examples %.4f' % accuracy_selected)
+    print('Mean confidence on ground truth classes, selected %.4f\n' % mean_conf_selected)
 
-    task = {}
-    task['dataset_name'] = FLAGS.dataset_name
-    task['model_name'] = FLAGS.model_name
-    task['accuracy_test'] = accuracy_all
-    task['mean_confidence_test'] = mean_conf_all
-
-    task['test_set_selected_length'] = len(selected_idx)
-    task['test_set_selected_idx_ranges'] = selected_example_idx_ranges
-    task['test_set_selected_idx_hash'] = hashlib.sha1(str(selected_idx).encode('utf-8')).hexdigest()
-    task['accuracy_test_selected'] = accuracy_selected
-    task['mean_confidence_test_selected'] = mean_conf_selected
+    task = {'dataset_name': FLAGS.dataset_name, 'model_name': FLAGS.model_name, 'accuracy_test': accuracy_all,
+            'mean_confidence_test': mean_conf_all, 'test_set_selected_length': len(selected_idx),
+            'test_set_selected_idx_ranges': selected_example_idx_ranges,
+            'test_set_selected_idx_hash': hashlib.sha1(str(selected_idx).encode('utf-8')).hexdigest(),
+            'accuracy_test_selected': accuracy_selected, 'mean_confidence_test_selected': mean_conf_selected}
 
     task_id = "%s_%d_%s_%s" % \
               (task['dataset_name'], task['test_set_selected_length'], task['test_set_selected_idx_hash'][:5],
@@ -273,12 +270,12 @@ def main(argv=None):
         from robustness import evaluate_robustness
         result_folder_robustness = os.path.join(FLAGS.result_folder, "robustness")
         fname_prefix = "%s_%s_robustness" % (task_id, attack_string_hash)
-        evaluate_robustness(FLAGS.robustness, model, Y_test_all, X_test_all, Y_test, \
-                            attack_string_list, X_test_adv_discretized_list,
+        evaluate_robustness(FLAGS.robustness, model, Y_test_all, X_test_all, Y_test, attack_string_list,
+                            X_test_adv_discretized_list,
                             fname_prefix, selected_idx_vis, result_folder_robustness)
 
-    # 7. Detection experiment.
-    # Example: --detection "FeatureSqueezing?distance_measure=l1&squeezers=median_smoothing_2,bit_depth_4,bilateral_filter_15_15_60;"
+    # 7. Detection experiment. Example: --detection
+    # "FeatureSqueezing?distance_measure=l1&squeezers=median_smoothing_2,bit_depth_4,bilateral_filter_15_15_60;"
     if FLAGS.detection != '':
         from detections.base import DetectionEvaluator
 

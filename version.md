@@ -1,10 +1,14 @@
+execute
+```shell
+git submodule update --init --recursive
+```
+
 libraries version
-由于cleverhans3.1.0支持python3.6 tf1或2 更高版本不能同时支持python3.6和tf1 需要降到tf1.12.0
 ```tex
-python 3.6.0
-tensorflow 1.12.0
-keras 2.3.1
-cleverhans 3.1.0
+python 3.6.13
+dm-tree==0.1.1
+cleverhans 4.0.0
+tensorflow 2.4.0
 urllib3
 ```
 

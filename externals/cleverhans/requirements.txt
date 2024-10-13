@@ -1,6 +1,0 @@
-nose
-theano
-pycodestyle
-scipy
-tensorflow
-matplotlib

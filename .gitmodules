@@ -1,6 +1,6 @@
-[submodule "externals/cleverhans"]
-	path = externals/cleverhans
-	url = https://github.com/openai/cleverhans.git
+# [submodule "externals/cleverhans"]
+# 	path = externals/cleverhans
+# 	url = https://github.com/openai/cleverhans.git
 [submodule "externals/carlini/nn_robust_attacks"]
 	path = externals/carlini/nn_robust_attacks
 	url = https://github.com/mzweilin/nn_robust_attacks.git

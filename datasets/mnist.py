@@ -1,10 +1,17 @@
-from keras.utils import np_utils
+import os
+import sys
 
-import sys, os
-import urllib3
 import numpy as np
+import urllib3
+import tarfile
+import tensorflow as tf
+
+from models.carlini_models import carlini_mnist_model
+from models.cleverhans_models import cleverhans_mnist_model
+from models.pgdtrained_models import pgdtrained_mnist_model
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 
 class MNISTDataset:
     def __init__(self):
@@ -14,26 +21,37 @@ class MNISTDataset:
         self.num_classes = 10
 
     # load MNIST dataset
-    def load_mnist_dataset(self):
-        dataset_mnist_dir = 'datasets/mnist'
-        if not os.path.exists(dataset_mnist_dir):
-            os.makedirs(dataset_mnist_dir)
 
-            # 下载 MNIST 数据集
-            url = 'https://s3.amazonaws.com/img-datasets/mnist.npz'
-            filepath = os.path.join(dataset_mnist_dir, 'mnist.npz')
-
-            print("Downloading MNIST dataset...")
-            http = urllib3.PoolManager()
-            response = http.request('GET', url)
-
+    def download_mnist_dataset(self, filepath, url):
+        print("Downloading MNIST dataset...")
+        http = urllib3.PoolManager()
+        try:
+            response = http.request('GET', url, preload_content=False)
             with open(filepath, 'wb') as f:
-                f.write(response.data)
-
+                for chunk in response.stream(1024):
+                    f.write(chunk)
             print("Download completed.")
+            response.release_conn()
+        except Exception as e:
+            # 如果下载失败，删除不完整的文件
+            if os.path.exists(filepath):
+                os.remove(filepath)
+            print(f"Error downloading dataset: {e}")
+            raise
 
-        # load on RAM
-        with np.load(os.path.join(dataset_mnist_dir, 'mnist.npz'), allow_pickle=True) as f:
+    def load_mnist_dataset(self, dataset_dir='datasets/mnist'):
+        if not os.path.exists(dataset_dir):
+            os.makedirs(dataset_dir)
+
+        filepath = os.path.join(dataset_dir, 'mnist.npz')
+
+        # check directory and file
+        if not os.path.isfile(filepath) or os.path.getsize(filepath) < 10 * 1024 * 1024:
+            url = 'https://s3.amazonaws.com/img-datasets/mnist.npz'
+            self.download_mnist_dataset(filepath, url)
+
+        # load dataset
+        with np.load(filepath, allow_pickle=True) as f:
             x_train, y_train = f['x_train'], f['y_train']
             x_test, y_test = f['x_test'], f['y_test']
 
@@ -44,7 +62,7 @@ class MNISTDataset:
         X_test = X_test.reshape(X_test.shape[0], self.image_size, self.image_size, self.num_channels)
         X_test = X_test.astype('float32')
         X_test /= 255
-        Y_test = np_utils.to_categorical(y_test, self.num_classes)
+        Y_test = tf.keras.utils.to_categorical(y_test, self.num_classes)
         del X_train, y_train
         return X_test, Y_test
 
@@ -55,10 +73,57 @@ class MNISTDataset:
         X_val = X_val.reshape(X_val.shape[0], self.image_size, self.image_size, self.num_channels)
         X_val = X_val.astype('float32') / 255
         y_val = y_train[:val_size]
-        Y_val = np_utils.to_categorical(y_val, self.num_classes)
+        Y_val = tf.keras.utils.to_categorical(y_val, self.num_classes)
         del X_train, y_train, X_test, y_test
         return X_val, Y_val
 
+    def load_model_by_name(self, model_name, logits=False, input_range_type=1, pre_filter=lambda x: x):
+        """
+        :params logits: return logits(input of softmax layer) if True; return softmax output otherwise.
+        :params input_range_type: {1: [0,1], 2:[-0.5, 0.5], 3:[-1, 1]...}
+        """
+        if model_name not in ["cleverhans", 'cleverhans_adv_trained', 'carlini', 'pgdtrained', 'pgdbase']:
+            raise NotImplementedError("Undefined model [%s] for MNIST." % model_name)
+
+        download_dir = 'downloads'
+        trained_model_dir = 'downloads/trained_models'
+
+        # dir not exist, make dir and download trained models from github, then unzip the url file to directory
+        # downloads github url: https://github.com/mzweilin/EvadeML-Zoo/releases/download/v0.1/downloads.tar.gz
+        if not os.path.isdir(download_dir):
+            os.makedirs(download_dir)
+        if not os.listdir(download_dir):
+            # 下载和解压模型
+            model_archive_url = "https://github.com/mzweilin/EvadeML-Zoo/releases/download/v0.1/downloads.tar.gz"
+            model_archive_path = os.path.join(download_dir, 'downloads.tar.gz')
+            if not os.path.isfile(model_archive_path):
+                print("Downloading trained models...")
+                http = urllib3.PoolManager()
+                response = http.request('GET', model_archive_url)
+
+                with open(model_archive_path, 'wb') as f:
+                    f.write(response.data)
+                print("Download completed.")
+
+                # unzip tar.gz file
+                with tarfile.open(model_archive_path, 'r:gz') as tar:
+                    tar.extractall(path=download_dir)
+                print("Extraction completed.")
+
+        model_weights_fpath = "MNIST_%s.keras_weights.h5" % model_name
+        model_weights_fpath = os.path.join(trained_model_dir, model_weights_fpath)
+
+        # self.maybe_download_model()
+        if model_name in ["cleverhans", 'cleverhans_adv_trained']:
+            model = cleverhans_mnist_model(logits=logits, input_range_type=input_range_type, pre_filter=pre_filter)
+        elif model_name in ['carlini']:
+            model = carlini_mnist_model(logits=logits, input_range_type=input_range_type, pre_filter=pre_filter)
+        elif model_name in ['pgdtrained', 'pgdbase']:
+            model = pgdtrained_mnist_model(logits=logits, input_range_type=input_range_type, pre_filter=pre_filter)
+        print("\n===Defined TensorFlow model graph.")
+        model.load_weights(model_weights_fpath)
+        print("---Loaded MNIST-%s model.\n" % model_name)
+        return model
 
 
 if __name__ == '__main__':
