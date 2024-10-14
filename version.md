@@ -1,3 +1,7 @@
+dataset: mnist
+model: cleverhans pretrained
+attack method: fgsm pgd deepfool
+
 execute
 ```shell
 git submodule update --init --recursive

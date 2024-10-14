@@ -7,12 +7,14 @@ import os
 
 import numpy as np
 import tensorflow as tf
+import random
 from tensorflow.python.platform import flags
 from tensorflow import keras
 from tensorflow.python.keras import backend as k_b
 from datasets import MNISTDataset
 from datasets import get_correct_prediction_idx, evaluate_adversarial_examples, calculate_mean_confidence, \
     calculate_accuracy
+from utils import visualization
 
 FLAGS = flags.FLAGS
 
@@ -36,7 +38,6 @@ flags.DEFINE_string('detection', '', 'Supported: feature_squeezing.')
 flags.DEFINE_boolean('detection_train_test_mode', True, 'Split into train/test datasets.')
 
 flags.DEFINE_string('result_folder', "results", 'The output folder for results.')
-flags.DEFINE_boolean('verbose', False, 'Stdout level. The hidden content will be saved to log files anyway.')
 
 FLAGS.model_name = FLAGS.model_name.lower()
 
@@ -65,6 +66,7 @@ def main(argv=None):
     sess = load_tf_session()
     keras.backend.set_learning_phase(0)
     # Define input TF placeholder
+    tf.compat.v1.disable_eager_execution()
     x = tf.compat.v1.placeholder(tf.float32, shape=(None, dataset.image_size, dataset.image_size, dataset.num_channels))
     y = tf.compat.v1.placeholder(tf.float32, shape=(None, dataset.num_classes))
 
@@ -88,29 +90,16 @@ def main(argv=None):
     import hashlib
     from datasets import get_first_n_examples_id_each_class
 
-    if FLAGS.select:
-        # Filter out the misclassified examples.
-        correct_idx = get_correct_prediction_idx(Y_pred_all, Y_test_all)
-        if FLAGS.test_mode:
-            # Only select the first example of each class.
-            correct_and_selected_idx = get_first_n_examples_id_each_class(Y_test_all[correct_idx])
-            selected_idx = [correct_idx[i] for i in correct_and_selected_idx]
-        else:
-            if not FLAGS.balance_sampling:
-                selected_idx = correct_idx[:FLAGS.nb_examples]
-            else:
-                # select the same number of examples for each class label.
-                nb_examples_per_class = int(FLAGS.nb_examples / Y_test_all.shape[1])
-                correct_and_selected_idx = get_first_n_examples_id_each_class(Y_test_all[correct_idx],
-                                                                              n=nb_examples_per_class)
-                selected_idx = [correct_idx[i] for i in correct_and_selected_idx]
-    else:
-        selected_idx = np.array(range(FLAGS.nb_examples))
+    # Filter out the misclassified examples.
+    correct_idx = get_correct_prediction_idx(Y_pred_all, Y_test_all)
+    # random select nb_examples idx
+    selected_idx = random.sample(correct_idx.tolist(), FLAGS.nb_examples)
 
     from utils.output import format_number_range
     selected_example_idx_ranges = format_number_range(sorted(selected_idx))
     print("Selected %d examples." % len(selected_idx))
     print("Selected index in test set (sorted): %s" % selected_example_idx_ranges)
+
     X_test, Y_test, Y_pred = X_test_all[selected_idx], Y_test_all[selected_idx], Y_pred_all[selected_idx]
 
     # The accuracy should be 100%.
@@ -119,7 +108,7 @@ def main(argv=None):
     print('Test accuracy on selected legitimate examples %.4f' % accuracy_selected)
     print('Mean confidence on ground truth classes, selected %.4f\n' % mean_conf_selected)
 
-    task = {'dataset_name': FLAGS.dataset_name, 'model_name': FLAGS.model_name, 'accuracy_test': accuracy_all,
+    task = {'dataset_name': 'MNIST', 'model_name': FLAGS.model_name, 'accuracy_test': accuracy_all,
             'mean_confidence_test': mean_conf_all, 'test_set_selected_length': len(selected_idx),
             'test_set_selected_idx_ranges': selected_example_idx_ranges,
             'test_set_selected_idx_hash': hashlib.sha1(str(selected_idx).encode('utf-8')).hexdigest(),
@@ -141,7 +130,6 @@ def main(argv=None):
     from utils.squeeze import reduce_precision_py
     from utils.parameter_parser import parse_params
     attack_string_hash = hashlib.sha1(FLAGS.attacks.encode('utf-8')).hexdigest()[:5]
-    sample_string_hash = task['test_set_selected_idx_hash'][:5]
 
     from datasets.datasets_utils import get_next_class, get_least_likely_class
     Y_test_target_next = get_next_class(Y_test)
@@ -190,12 +178,16 @@ def main(argv=None):
             attack_params['targeted'] = False
             Y_test_target = Y_test.copy()
 
-        x_adv_fname = "%s_%s.pickle" % (task_id, attack_string)
-        x_adv_fpath = os.path.join(X_adv_cache_folder, x_adv_fname)
+        x_adv_name = "%s_%s.pickle" % (task_id, attack_string)
+        x_adv_cache_path = os.path.join(X_adv_cache_folder, x_adv_name)
 
         X_test_adv, aux_info = maybe_generate_adv_examples(sess, model, x, y, X_test, Y_test_target, attack_name,
-                                                           attack_params, use_cache=x_adv_fpath, verbose=FLAGS.verbose,
+                                                           attack_params, x_adv_cache_path,
                                                            attack_log_fpath=attack_log_fpath)
+
+        # save images
+        visualization.save_mnist_examples(original_examples=X_test, adversarial_examples=X_test_adv,
+                                          output_dir=os.path.join(FLAGS.result_folder, "images"))
 
         if FLAGS.clip > 0:
             # This is L-inf clipping.

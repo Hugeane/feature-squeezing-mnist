@@ -1,8 +1,8 @@
 import numpy as np
 import json
 
-from keras.utils.data_utils import get_file
-from keras import backend as K
+from tensorflow.keras.utils import get_file
+from tensorflow.keras import backend as K
 
 CLASS_INDEX = None
 CLASS_INDEX_PATH = 'https://s3.amazonaws.com/deep-learning-models/image-models/imagenet_class_index.json'

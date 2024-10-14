@@ -4,3 +4,4 @@ tensorflow 2.4.0
 cntk==2.5
 pillow==8.0
 urllib3
+opencv-python

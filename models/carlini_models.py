@@ -1,6 +1,6 @@
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, Activation, Flatten, Lambda
-from keras.layers import MaxPooling2D, Conv2D
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout, Activation, Flatten, Lambda
+from tensorflow.keras.layers import MaxPooling2D, Conv2D
 
 
 def carlini_mnist_model(logits=True, input_range_type=2, pre_filter=lambda x: x):
