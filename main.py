@@ -9,11 +9,16 @@ import pickle
 import time
 import random
 
-import keras
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import app
 from tensorflow.python.platform import flags
+from tensorflow import keras
+from tensorflow.python.keras import backend as k_b
+from datasets import MNISTDataset
+from datasets import get_correct_prediction_idx, evaluate_adversarial_examples, calculate_mean_confidence, \
+    calculate_accuracy
+from utils import visualization
 
 FLAGS = flags.FLAGS
 
@@ -45,11 +50,11 @@ FLAGS.model_name = FLAGS.model_name.lower()
 
 def load_tf_session():
     # Set TF random seed to improve reproducibility
-    tf.set_random_seed(1234)
+    tf.random.set_seed(1234)
 
     # Create TF session and set as Keras backend session
-    sess = tf.Session()
-    keras.backend.set_session(sess)
+    sess = tf.compat.v1.Session()
+    k_b.set_session(sess)
     print("Created TensorFlow session and set Keras backend.")
     return sess
 

@@ -1,12 +1,44 @@
-import sys, os
+import os
+import sys
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from utils import load_externals
-from cleverhans.utils import conv_2d
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout, Activation, Flatten, Lambda
+from tensorflow.keras.layers import Conv2D
 
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, Activation, Flatten, Lambda
-from keras.layers import MaxPooling2D, Conv2D
+
+def conv_2d(filters, kernel_shape, strides, padding, input_shape=None):
+    """
+    Defines the right convolutional layer according to the
+    version of Keras that is installed.
+    :param filters: (required integer) the dimensionality of the output
+                    space (i.e. the number output of filters in the
+                    convolution)
+    :param kernel_shape: (required tuple or list of 2 integers) specifies
+                         the kernel shape of the convolution
+    :param strides: (required tuple or list of 2 integers) specifies
+                         the strides of the convolution along the width and
+                         height.
+    :param padding: (required string) can be either 'valid' (no padding around
+                    input or feature map) or 'same' (pad to ensure that the
+                    output feature map size is identical to the layer input)
+    :param input_shape: (optional) give input shape if this is the first
+                        layer of the model
+    :return: the Keras layer
+    """
+    if input_shape is not None:
+        return Conv2D(
+            filters=filters,
+            kernel_size=kernel_shape,
+            strides=strides,
+            padding=padding,
+            input_shape=input_shape,
+        )
+    else:
+        return Conv2D(
+            filters=filters, kernel_size=kernel_shape, strides=strides, padding=padding
+        )
 
 def cleverhans_mnist_model(logits=False, input_range_type=1, pre_filter=lambda x:x):
     input_shape = (28, 28, 1)

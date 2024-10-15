@@ -1,20 +1,21 @@
-from keras_applications.imagenet_utils import _obtain_input_shape
-from keras.utils.data_utils import get_file
-import keras.backend as K
-from keras.layers import Input
-from keras.layers.convolutional import Conv2D, Conv2DTranspose, UpSampling2D
-from keras.regularizers import l2
-from keras.layers.normalization import BatchNormalization
-from keras.layers.core import Dense, Dropout, Activation, Reshape
-from keras.layers.pooling import GlobalAveragePooling2D
-from keras.models import Model
+import os
+import sys
 
-import sys, os
+import tensorflow.keras.backend as K
+from tensorflow.keras.layers import BatchNormalization
+from tensorflow.keras.layers import Conv2D
+from tensorflow.keras.layers import Dense, Activation
+from tensorflow.keras.layers import GlobalAveragePooling2D
+from tensorflow.keras.layers import Input
+from tensorflow.keras.models import Model
+from tensorflow.keras.regularizers import l2
+from tensorflow.keras.utils import get_file, get_source_inputs
+from tensorflow.python.keras.applications.imagenet_utils import obtain_input_shape
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from utils import load_externals
-from densenet import __transition_block, __dense_block, TF_WEIGHTS_PATH, TF_WEIGHTS_PATH_NO_TOP
-
+from externals.titu1994.DenseNet.densenet import __transition_block, __dense_block, TF_WEIGHTS_PATH, \
+    TF_WEIGHTS_PATH_NO_TOP
 
 
 def get_densenet_weights_path(dataset_name="CIFAR-10", include_top=True):
@@ -30,7 +31,7 @@ def get_densenet_weights_path(dataset_name="CIFAR-10", include_top=True):
     return weights_path
 
 
-def densenet_cifar10_model(logits=False, input_range_type=1, pre_filter=lambda x:x):
+def densenet_cifar10_model(logits=False, input_range_type=1, pre_filter=lambda x: x):
     assert input_range_type == 1
 
     batch_size = 64
@@ -39,14 +40,15 @@ def densenet_cifar10_model(logits=False, input_range_type=1, pre_filter=lambda x
     img_rows, img_cols = 32, 32
     img_channels = 3
 
-    img_dim = (img_channels, img_rows, img_cols) if K.image_dim_ordering() == "th" else (img_rows, img_cols, img_channels)
+    img_dim = (img_channels, img_rows, img_cols) if K.image_data_format() == "th" else (
+        img_rows, img_cols, img_channels)
     depth = 40
     nb_dense_block = 3
     growth_rate = 12
     nb_filter = 16
-    dropout_rate = 0.0 # 0.0 for data augmentation
+    dropout_rate = 0.0  # 0.0 for data augmentation
     input_tensor = None
-    include_top=True
+    include_top = True
 
     if logits is True:
         activation = None
@@ -54,11 +56,11 @@ def densenet_cifar10_model(logits=False, input_range_type=1, pre_filter=lambda x
         activation = "softmax"
 
     # Determine proper input shape
-    input_shape = _obtain_input_shape(img_dim,
-                                      default_size=32,
-                                      min_size=8,
-                                      data_format=K.image_data_format(),
-                                      include_top=include_top)
+    input_shape = obtain_input_shape(img_dim,
+                                     default_size=32,
+                                     min_size=8,
+                                     data_format=K.image_data_format(),
+                                     require_flatten=include_top)
 
     if input_tensor is None:
         img_input = Input(shape=input_shape)

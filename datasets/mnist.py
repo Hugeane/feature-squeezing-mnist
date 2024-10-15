@@ -1,14 +1,16 @@
-from keras.datasets import mnist
-from keras.utils import np_utils
+from tensorflow.keras.datasets import mnist
+from tensorflow.python.keras.utils import np_utils
 
 import sys, os
 import urllib3
 import tarfile
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from models.carlini_models import carlini_mnist_model
 from models.cleverhans_models import cleverhans_mnist_model
 from models.pgdtrained_models import pgdtrained_mnist_model
+
 
 class MNISTDataset:
     def __init__(self):
@@ -39,7 +41,7 @@ class MNISTDataset:
 
         return X_val, Y_val
 
-    def load_model_by_name(self, model_name, logits=False, input_range_type=1, pre_filter=lambda x:x):
+    def load_model_by_name(self, model_name, logits=False, input_range_type=1, pre_filter=lambda x: x):
         """
         :params logits: return logits(input of softmax layer) if True; return softmax output otherwise.
         :params input_range_type: {1: [0,1], 2:[-0.5, 0.5], 3:[-1, 1]...}
@@ -79,24 +81,25 @@ class MNISTDataset:
         if model_name in ["cleverhans", 'cleverhans_adv_trained']:
             model = cleverhans_mnist_model(logits=logits, input_range_type=input_range_type, pre_filter=pre_filter)
         elif model_name in ['carlini']:
-            model = carlini_mnist_model(logits=logits, input_range_type = input_range_type, pre_filter=pre_filter)
+            model = carlini_mnist_model(logits=logits, input_range_type=input_range_type, pre_filter=pre_filter)
         elif model_name in ['pgdtrained', 'pgdbase']:
-            model = pgdtrained_mnist_model(logits=logits, input_range_type = input_range_type, pre_filter=pre_filter)
+            model = pgdtrained_mnist_model(logits=logits, input_range_type=input_range_type, pre_filter=pre_filter)
         print("\n===Defined TensorFlow model graph.")
         model.load_weights(model_weights_fpath)
-        print ("---Loaded MNIST-%s model.\n" % model_name)
+        print("---Loaded MNIST-%s model.\n" % model_name)
         return model
+
 
 if __name__ == '__main__':
     # from datasets.mnist import *
     dataset = MNISTDataset()
     X_test, Y_test = dataset.get_test_dataset()
-    print (X_test.shape)
-    print (Y_test.shape)
+    print(X_test.shape)
+    print(Y_test.shape)
 
     model_name = 'cleverhans'
     model = dataset.load_model_by_name(model_name)
 
-    model.compile(loss='categorical_crossentropy',optimizer='sgd', metrics=['acc'])
-    _,accuracy = model.evaluate(X_test, Y_test, batch_size=128)
-    print ("\nTesting accuracy: %.4f" % accuracy)
+    model.compile(loss='categorical_crossentropy', optimizer='sgd', metrics=['acc'])
+    _, accuracy = model.evaluate(X_test, Y_test, batch_size=128)
+    print("\nTesting accuracy: %.4f" % accuracy)

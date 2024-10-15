@@ -3,28 +3,28 @@
 - [Densely Connected Convolutional Networks](https://arxiv.org/pdf/1608.06993.pdf)
 - [The One Hundred Layers Tiramisu: Fully Convolutional DenseNets for Semantic Segmentation](https://arxiv.org/pdf/1611.09326.pdf)
 '''
-from __future__ import print_function
 from __future__ import absolute_import
 from __future__ import division
+from __future__ import print_function
 
 import warnings
 
-from keras.models import Model
-from keras.layers.core import Dense, Dropout, Activation, Reshape
-from keras.layers.convolutional import Conv2D, Conv2DTranspose, UpSampling2D
-from keras.layers.pooling import AveragePooling2D
-from keras.layers.pooling import GlobalAveragePooling2D
-from keras.layers import Input
-from keras.layers.merge import concatenate
-from keras.layers.normalization import BatchNormalization
-from keras.regularizers import l2
-from keras.utils.layer_utils import convert_all_kernels_in_model
-from keras.utils.data_utils import get_file
-from keras.engine.topology import get_source_inputs
-from keras_applications.imagenet_utils import _obtain_input_shape
-import keras.backend as K
+import tensorflow as tf
+import tensorflow.keras.backend as K
+from tensorflow.keras.layers import AveragePooling2D
+from tensorflow.keras.layers import Conv2D, Conv2DTranspose, UpSampling2D
+from tensorflow.keras.layers import Dense, Dropout, Activation, Reshape
+from tensorflow.keras.layers import GlobalAveragePooling2D
+from tensorflow.keras.layers import Input
+from tensorflow.keras.layers import concatenate
+from tensorflow.keras.models import Model
+from tensorflow.keras.regularizers import l2
+from tensorflow.keras.utils import get_file, get_source_inputs
+from tensorflow.python.keras.applications.imagenet_utils import obtain_input_shape
+from tensorflow.python.keras.layers.normalization import BatchNormalization
+from utils.upgrade_layer_utils import convert_all_kernels_in_model
 
-from subpixel import SubPixelUpscaling
+from externals.titu1994.DenseNet.subpixel import SubPixelUpscaling
 
 TH_WEIGHTS_PATH = 'https://github.com/titu1994/DenseNet/releases/download/v2.0/DenseNet-40-12-Theano-Backend-TH-dim-ordering.h5'
 TF_WEIGHTS_PATH = 'https://github.com/titu1994/DenseNet/releases/download/v2.0/DenseNet-40-12-Tensorflow-Backend-TF-dim-ordering.h5'
@@ -101,11 +101,11 @@ def DenseNet(input_shape=None, depth=40, nb_dense_block=3, growth_rate=12, nb_fi
         raise ValueError('sigmoid activation can only be used when classes = 1')
 
     # Determine proper input shape
-    input_shape = _obtain_input_shape(input_shape,
-                                      default_size=32,
-                                      min_size=8,
-                                      data_format=K.image_data_format(),
-                                      include_top=include_top)
+    input_shape = obtain_input_shape(input_shape,
+                                     default_size=32,
+                                     min_size=8,
+                                     data_format=K.image_data_format(),
+                                     require_flatten=include_top)
 
     if input_tensor is None:
         img_input = Input(shape=input_shape)
@@ -155,7 +155,7 @@ def DenseNet(input_shape=None, depth=40, nb_dense_block=3, growth_rate=12, nb_fi
                                   '`image_data_format="channels_last"` in '
                                   'your Keras config '
                                   'at ~/.keras/keras.json.')
-                    convert_all_kernels_in_model(model)
+                    tf.keras.utils.convert_all_kernels_in_model(model)
             else:
                 if include_top:
                     weights_path = get_file('densenet_40_12_tf_dim_ordering_tf_kernels.h5',
@@ -504,7 +504,8 @@ def __create_dense_net(nb_classes, img_input, include_top, depth=40, nb_dense_bl
     x = GlobalAveragePooling2D()(x)
 
     if include_top:
-        x = Dense(nb_classes, activation=activation, kernel_regularizer=l2(weight_decay), bias_regularizer=l2(weight_decay))(x)
+        x = Dense(nb_classes, activation=activation, kernel_regularizer=l2(weight_decay),
+                  bias_regularizer=l2(weight_decay))(x)
 
     return x
 
@@ -614,7 +615,8 @@ def __create_fcn_dense_net(nb_classes, img_input, include_top, nb_dense_block=5,
         x = concatenate([t, skip_list[block_idx]], axis=concat_axis)
 
         # Dont allow the feature map size to grow in upsampling dense blocks
-        x_up, nb_filter, concat_list = __dense_block(x, nb_layers[nb_dense_block + block_idx + 1], nb_filter=growth_rate,
+        x_up, nb_filter, concat_list = __dense_block(x, nb_layers[nb_dense_block + block_idx + 1],
+                                                     nb_filter=growth_rate,
                                                      growth_rate=growth_rate, dropout_rate=dropout_rate,
                                                      weight_decay=weight_decay,
                                                      return_concat_list=True, grow_nb_filters=False)
@@ -636,8 +638,8 @@ def __create_fcn_dense_net(nb_classes, img_input, include_top, nb_dense_block=5,
 
     return x
 
-if __name__ == '__main__':
 
+if __name__ == '__main__':
     model = DenseNet((32, 32, 3), depth=40, growth_rate=12, nb_filter=16)
 
     model.summary()
