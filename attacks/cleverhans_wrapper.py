@@ -1,15 +1,13 @@
-import numpy as np
-import tensorflow as tf
-import click
+import os
+import sys
 
-import pdb
-import sys, os
+import click
+import numpy as np
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from utils import load_externals
-from cleverhans.utils_tf import model_loss, batch_eval
-
 import warnings
+
 
 def override_params(default, update):
     for key in default:
@@ -32,7 +30,9 @@ def override_params(default, update):
     return default
 
 
-from cleverhans.attacks import FastGradientMethod
+from externals.cleverhans.cleverhans.attacks import FastGradientMethod
+
+
 def generate_fgsm_examples(sess, model, x, y, X, Y, attack_params, verbose, attack_log_fpath):
     """
     Untargeted attack. Y is not needed.
@@ -45,21 +45,25 @@ def generate_fgsm_examples(sess, model, x, y, X, Y, attack_params, verbose, atta
     return X_adv
 
 
-from cleverhans.attacks import BasicIterativeMethod
+from externals.cleverhans.cleverhans.attacks import BasicIterativeMethod
+
+
 def generate_bim_examples(sess, model, x, y, X, Y, attack_params, verbose, attack_log_fpath):
     """
     Untargeted attack. Y is not needed.
     """
     bim = BasicIterativeMethod(model, back='tf', sess=sess)
-    bim_params = {'eps': 0.1, 'eps_iter':0.05, 'nb_iter':10, 'y':y,
-                     'ord':np.inf, 'clip_min':0, 'clip_max':1 }
+    bim_params = {'eps': 0.1, 'eps_iter': 0.05, 'nb_iter': 10, 'y': y,
+                  'ord': np.inf, 'clip_min': 0, 'clip_max': 1}
     bim_params = override_params(bim_params, attack_params)
 
     X_adv = bim.generate_np(X, **bim_params)
     return X_adv
 
 
-from cleverhans.attacks import SaliencyMapMethod
+from externals.cleverhans.cleverhans.attacks import SaliencyMapMethod
+
+
 def generate_jsma_examples(sess, model, x, y, X, Y, attack_params, verbose, attack_log_fpath):
     """
     Targeted attack, with target classes in Y.
@@ -77,16 +81,15 @@ def generate_jsma_examples(sess, model, x, y, X, Y, attack_params, verbose, atta
 
     adv_x_list = []
 
-    with click.progressbar(range(0, len(X)), file=sys.stderr, show_pos=True, 
-                           width=40, bar_template='  [%(bar)s] JSMA Attacking %(info)s', 
+    with click.progressbar(range(0, len(X)), file=sys.stderr, show_pos=True,
+                           width=40, bar_template='  [%(bar)s] JSMA Attacking %(info)s',
                            fill_char='>', empty_char='-') as bar:
         # Loop over the samples we want to perturb into adversarial examples
         for sample_ind in bar:
-            sample = X[sample_ind:(sample_ind+1)]
+            sample = X[sample_ind:(sample_ind + 1)]
 
             jsma_params['y_val'] = Y_target[[sample_ind],]
             adv_x = jsma.generate_np(sample, **jsma_params)
             adv_x_list.append(adv_x)
 
     return np.vstack(adv_x_list)
-

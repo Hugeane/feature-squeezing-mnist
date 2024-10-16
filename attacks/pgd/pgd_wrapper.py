@@ -1,10 +1,10 @@
-
 import warnings
 from .pgd_attack import LinfPGDAttack
 
-from keras.models import Model
+from tensorflow.keras.models import Model
 import tensorflow as tf
 import numpy as np
+
 
 def override_params(default, update):
     for key in default:
@@ -37,8 +37,8 @@ class PGDModelWrapper:
 
 def generate_pgdli_examples(sess, model, x, y, X, Y, attack_params, verbose, attack_log_fpath):
     model_for_pgd = PGDModelWrapper(model, x, y)
-    params = {'model': model_for_pgd, 'epsilon': 0.3, 'k':40, 'a':0.01, 'random_start':True,
-                     'loss_func':'xent' }
+    params = {'model': model_for_pgd, 'epsilon': 0.3, 'k': 40, 'a': 0.01, 'random_start': True,
+              'loss_func': 'xent'}
     params = override_params(params, attack_params)
     attack = LinfPGDAttack(**params)
 

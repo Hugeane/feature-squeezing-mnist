@@ -6,7 +6,7 @@ sys.path.append('datasets/svhn_dataset/')
 import numpy as np
 import scipy.io as sio
 
-from keras.utils import np_utils
+import tensorflow.keras.utils as k_utils
 from models.tohinz_models import tohinz_svhn_model
 
 
@@ -29,7 +29,7 @@ class SVHNDataset:
 
         X_test = np.transpose(X_test, (3, 0, 1, 2))
         X_test = X_test.astype('float32') / 255
-        Y_test = np_utils.to_categorical(y_test)
+        Y_test = k_utils.to_categorical(y_test)
 
         del y_test
         return X_test, Y_test
@@ -49,7 +49,7 @@ class SVHNDataset:
         X_val = np.transpose(X_val, (3, 0, 1, 2))
         X_val = X_val.astype('float32') / 255
         y_val = y_train[:val_size]
-        Y_val = np_utils.to_categorical(y_val)
+        Y_val = k_utils.to_categorical(y_val)
         del X_train, y_train
         return X_val, Y_val
 

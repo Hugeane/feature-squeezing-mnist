@@ -18,8 +18,9 @@ import math
 #       We will combine the gradient of several models.
 
 
-from keras.models import Model
-from keras.layers import Lambda, Input
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Lambda, Input
+
 
 def insert_pre_processing_layer_to_model(model, input_shape, func):
     # Output model: accept [-0.5, 0.5] input range instead of [0,1], output logits instead of softmax.
@@ -48,9 +49,11 @@ def adaptive_attack(sess, model, squeezers, x, y, X_test, Y_test_target, attack_
 
 
 import sys
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from utils.squeeze import get_squeezer_by_name, reduce_precision_tf
+
 
 # if FLAGS.dataset_name == "MNIST":
 #     # squeezers_name = ['median_smoothing_2', 'median_smoothing_3', 'binary_filter']
@@ -63,9 +66,13 @@ from utils.squeeze import get_squeezer_by_name, reduce_precision_tf
 def get_tf_squeezer_by_name(name):
     return get_squeezer_by_name(name, 'tensorflow')
 
+
 tf_squeezers_name_mnist = ['median_filter_2_2', 'bit_depth_1']
-tf_squeezers_name_cifar10 = ['median_filter_1_2', 'median_filter_2_1', 'median_filter_2_2', 'median_filter_1_3', 'bit_depth_5', 'bit_depth_4']
-tf_squeezers_name_imagenet = ['median_filter_1_2', 'median_filter_2_1', 'median_filter_2_2', 'median_filter_1_3', 'bit_depth_5']
+tf_squeezers_name_cifar10 = ['median_filter_1_2', 'median_filter_2_1', 'median_filter_2_2', 'median_filter_1_3',
+                             'bit_depth_5', 'bit_depth_4']
+tf_squeezers_name_imagenet = ['median_filter_1_2', 'median_filter_2_1', 'median_filter_2_2', 'median_filter_1_3',
+                              'bit_depth_5']
+
 
 # tf_squeezers = map(get_tf_squeezer_by_name, tf_squeezers_name)
 
@@ -73,10 +80,12 @@ def get_tf_squeezers_by_str(tf_squeezers_str):
     tf_squeezers_name = tf_squeezers_str.split(',')
     return map(get_tf_squeezer_by_name, tf_squeezers_name)
 
-def kl_tf(x1, x2, eps = 0.000000001):
+
+def kl_tf(x1, x2, eps=0.000000001):
     x1 = tf.clip_by_value(x1, eps, 1)
     x2 = tf.clip_by_value(x2, eps, 1)
-    return tf.reduce_sum(x1 * tf.log(x1/x2), reduction_indices=[1])
+    return tf.reduce_sum(x1 * tf.log(x1 / x2), reduction_indices=[1])
+
 
 def generate_adaptive_carlini_l2_examples(sess, model, x, y, X, Y_target, attack_params, verbose, attack_log_fpath):
     # (model, x, y, X, Y_target, tf_squeezers=tf_squeezers, detector_threshold = 0.2):
@@ -90,7 +99,7 @@ def generate_adaptive_carlini_l2_examples(sess, model, x, y, X, Y_target, attack
         'learning_rate': 9e-2,
         'binary_search_steps': 9,
         'max_iterations': 5000,
-        'abort_early': False, # TODO: not suported. 
+        'abort_early': False,  # TODO: not suported.
         'initial_const': 0.0,
         'detector_threshold': 0.3,
         'uint8_optimized': False,
@@ -118,7 +127,9 @@ def generate_adaptive_carlini_l2_examples(sess, model, x, y, X, Y_target, attack
     return adaptive_CarliniL2(sess, model, X, Y_target, eval_dir, **default_params)
 
 
-def adaptive_CarliniL2(sess, model, X, Y_target, eval_dir, batch_size, confidence, targeted, learning_rate, binary_search_steps, max_iterations, abort_early, initial_const, detector_threshold, uint8_optimized, tf_squeezers, distance_measure, between_squeezers):
+def adaptive_CarliniL2(sess, model, X, Y_target, eval_dir, batch_size, confidence, targeted, learning_rate,
+                       binary_search_steps, max_iterations, abort_early, initial_const, detector_threshold,
+                       uint8_optimized, tf_squeezers, distance_measure, between_squeezers):
     model_logits = Model(inputs=model.layers[0].input, outputs=model.layers[-2].output)
 
     # Need a determined batch size for coefficient vectors.
@@ -143,26 +154,23 @@ def adaptive_CarliniL2(sess, model, X, Y_target, eval_dir, batch_size, confidenc
     # Gradient required.
     y_pred_logits = model_logits(x_star)
     y_pred = model(x_star)
-    print ("tf_squezers: %s" % tf_squeezers)
-    y_squeezed_pred_list = [ model(func(x_star)) for func in tf_squeezers ]
-    
+    print("tf_squezers: %s" % tf_squeezers)
+    y_squeezed_pred_list = [model(func(x_star)) for func in tf_squeezers]
+
     coeff = tf.placeholder(shape=(N0,), dtype=tf.float32)
     l2dist = tf.reduce_sum(tf.square(x_star - x), [1, 2, 3])
     ground_truth_logits = tf.reduce_sum(y * y_pred_logits, 1)
     top_other_logits = tf.reduce_max((1 - y) * y_pred_logits - (y * 10000), 1)
-    
+
     # Untargeted attack, minimize the ground_truth_logits.
     # target_penalty = tf.maximum(0., ground_truth_logits - top_other_logits)
 
     if targeted is False:
         # if untargeted, optimize for making this class least likely.
-        target_penalty = tf.maximum(0.0, ground_truth_logits-top_other_logits+confidence)
+        target_penalty = tf.maximum(0.0, ground_truth_logits - top_other_logits + confidence)
     else:
         # if targetted, optimize for making the other class most likely
-        target_penalty = tf.maximum(0.0, top_other_logits-ground_truth_logits+confidence)
-        
-        
-
+        target_penalty = tf.maximum(0.0, top_other_logits - ground_truth_logits + confidence)
 
     # Minimize the sum of L1 score.
     detector_penalty = None
@@ -171,9 +179,9 @@ def adaptive_CarliniL2(sess, model, X, Y_target, eval_dir, batch_size, confidenc
     all_pred_list = [y_pred] + y_squeezed_pred_list
 
     if between_squeezers:
-        print ("#Between squeezers")
+        print("#Between squeezers")
         for i, pred_base in enumerate(all_pred_list):
-            for j in range(i+1, len(all_pred_list)):
+            for j in range(i + 1, len(all_pred_list)):
                 pred_target = all_pred_list[j]
                 if distance_measure == "l1":
                     score = tf.reduce_sum(tf.abs(pred_base - pred_target), 1)
@@ -201,8 +209,6 @@ def adaptive_CarliniL2(sess, model, X, Y_target, eval_dir, batch_size, confidenc
                 detector_penalty = detector_penalty_sub
             else:
                 detector_penalty += detector_penalty_sub
-
-    
 
     # There could be different desion choices. E.g. add one coefficient for the detector penalty.
     loss = tf.add((target_penalty + detector_penalty) * coeff, l2dist)
@@ -244,7 +250,7 @@ def adaptive_CarliniL2(sess, model, X, Y_target, eval_dir, batch_size, confidenc
         sess.run(tf.variables_initializer([x_star_tanh] + optimizer_variables))
         tf.assert_variables_initialized()
 
-        print (coeff_curr_log) # %%%
+        print(coeff_curr_log)  # %%%
         curr_coeff = np.exp(coeff_curr_log)
         # Initially, all are failed adversarial examples.
         all_fail = np.ones((N0,), dtype=np.bool)
@@ -254,11 +260,12 @@ def adaptive_CarliniL2(sess, model, X, Y_target, eval_dir, batch_size, confidenc
         # 5000 iterations by default.
         for j in range(max_iterations):
             # Correct prediction means it is failed untargeted attacks.
-            xst, adv_fail, l1o, l2d, _ = sess.run([x_star, correct_prediction, detector_penalty, l2dist, train_adv_step], feed_dict={
-                x: batch_images,
-                y: batch_labels,
-                coeff: curr_coeff,
-            })
+            xst, adv_fail, l1o, l2d, _ = sess.run(
+                [x_star, correct_prediction, detector_penalty, l2dist, train_adv_step], feed_dict={
+                    x: batch_images,
+                    y: batch_labels,
+                    coeff: curr_coeff,
+                })
             all_fail = np.logical_and(all_fail, adv_fail)
             for i in range(N0):
                 if adv_fail[i] or l1o[i] > 0:
@@ -313,7 +320,3 @@ def adaptive_CarliniL2(sess, model, X, Y_target, eval_dir, batch_size, confidenc
         np.save(eval_dir + '/combined_coeff_log.npy', coeff_block_log)
 
     return best_images
-
-
-
-

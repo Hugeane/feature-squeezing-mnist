@@ -1,14 +1,15 @@
-import sys, os
+import os
+import sys
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-import tensorflow as tf
-from utils import load_externals
-from resnet50 import *
+from externals.keras_models.resnet50 import *
 
-from keras_applications.imagenet_utils import _obtain_input_shape
-from keras.layers import Dense, Dropout, Activation, Flatten, Lambda
+from tensorflow.python.keras.applications.imagenet_utils import obtain_input_shape
+from tensorflow.keras.layers import Dense, Activation, Flatten, Lambda
 
 from .keras_models import scaling_tf
+
 
 # Override the original definition
 def ResNet50(include_top=True, weights='imagenet',
@@ -76,11 +77,11 @@ def ResNet50(include_top=True, weights='imagenet',
                          ' as true, `classes` should be 1000')
 
     # Determine proper input shape
-    input_shape = _obtain_input_shape(input_shape,
-                                      default_size=224,
-                                      min_size=197,
-                                      data_format=K.image_data_format(),
-                                      include_top=include_top)
+    input_shape = obtain_input_shape(input_shape,
+                                     default_size=224,
+                                     min_size=197,
+                                     data_format=K.image_data_format(),
+                                     require_flatten=include_top)
 
     if input_tensor is None:
         img_input = Input(shape=input_shape)

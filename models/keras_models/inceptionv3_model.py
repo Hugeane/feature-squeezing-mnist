@@ -1,16 +1,11 @@
-import sys, os
+import os
+import sys
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-import tensorflow as tf
-from utils import load_externals
-from inception_v3 import *
-
-from keras_applications.imagenet_utils import _obtain_input_shape
-from keras.layers import Lambda, Activation
-
-# from .keras_models import scaling_tf
-
-import pdb
+from externals.keras_models.inception_v3 import *
+from tensorflow.python.keras.applications.imagenet_utils import obtain_input_shape
+from tensorflow.keras.layers import Lambda, Activation
 
 
 def scaling_tf(X, input_range_type):
@@ -94,12 +89,12 @@ def InceptionV3(include_top=True,
                          ' as true, `classes` should be 1000')
 
     # Determine proper input shape
-    input_shape = _obtain_input_shape(
+    input_shape = obtain_input_shape(
         input_shape,
         default_size=299,
         min_size=139,
         data_format=K.image_data_format(),
-        include_top=include_top)
+        require_flatten=include_top)
 
     if input_tensor is None:
         img_input = Input(shape=input_shape)

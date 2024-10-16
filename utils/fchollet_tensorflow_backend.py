@@ -4,7 +4,7 @@ try:
     from tensorflow.python.ops import ctc_ops as ctc
 except ImportError:
     import tensorflow.contrib.ctc as ctc
-import keras.backend as K
+import tensorflow.keras.backend as K
 
 py_all = all
 
@@ -116,7 +116,7 @@ def extract_image_patches(x, ksizes, ssizes, padding='same',
     if data_format == 'channels_first':
         x = K.permute_dimensions(x, (0, 2, 3, 1))
     bs_i, w_i, h_i, ch_i = K.int_shape(x)
-    patches = tf.extract_image_patches(x, kernel, strides, [1, 1, 1, 1],
+    patches = tf.image.extract_patches(x, kernel, strides, [1, 1, 1, 1],
                                        padding)
     # Reshaping to fit Theano
     bs, w, h, ch = K.int_shape(patches)
@@ -145,12 +145,12 @@ def depth_to_space(input, scale, data_format=None):
         data_format = K.image_data_format()
     data_format = data_format.lower()
     input = _preprocess_conv2d_input(input, data_format)
-    out = tf.depth_to_space(input, scale)
+    out = tf.nn.depth_to_space(input, scale)
     out = _postprocess_conv2d_output(out, data_format)
     return out
 
 
 def moments(x, axes, shift=None, keep_dims=False):
-    ''' Wrapper over tensorflow backend call '''
+    """ Wrapper over tensorflow backend call """
 
     return tf.nn.moments(x, axes, shift=shift, keep_dims=keep_dims)

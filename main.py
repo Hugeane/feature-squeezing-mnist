@@ -89,10 +89,11 @@ def main(argv=None):
     sess = load_tf_session()
     keras.backend.set_learning_phase(0)
     # Define input TF placeholder
-    x = tf.placeholder(tf.float32, shape=(None, dataset.image_size, dataset.image_size, dataset.num_channels))
-    y = tf.placeholder(tf.float32, shape=(None, dataset.num_classes))
+    tf.compat.v1.disable_eager_execution()
+    x = tf.compat.v1.placeholder(tf.float32, shape=(None, dataset.image_size, dataset.image_size, dataset.num_channels))
+    y = tf.compat.v1.placeholder(tf.float32, shape=(None, dataset.num_classes))
 
-    with tf.variable_scope(FLAGS.model_name):
+    with tf.compat.v1.variable_scope(FLAGS.model_name):
         """
         Create a model instance for prediction.
         The scaling argument, 'input_range_type': {1: [0,1], 2:[-0.5, 0.5], 3:[-1, 1]...}
@@ -320,4 +321,7 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
-    main()
+    # main()
+    from attacks import maybe_generate_adv_examples
+    from utils.squeeze import reduce_precision_py
+    from utils.parameter_parser import parse_params

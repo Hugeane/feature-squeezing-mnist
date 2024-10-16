@@ -1,24 +1,22 @@
-from future.standard_library import install_aliases
-install_aliases()
-from urllib import parse as urlparse
-
-import pickle
-import numpy as np
 import os
+import pickle
 import time
 
-from .cleverhans_wrapper import generate_fgsm_examples, generate_jsma_examples, generate_bim_examples
-from .carlini_wrapper import generate_carlini_l2_examples, generate_carlini_li_examples, generate_carlini_l0_examples
-from .deepfool_wrapper import generate_deepfool_examples, generate_universal_perturbation_examples
+import numpy as np
+
 from .adaptive.adaptive_adversary import generate_adaptive_carlini_l2_examples
+from .carlini_wrapper import generate_carlini_l2_examples, generate_carlini_li_examples, generate_carlini_l0_examples
+from .cleverhans_wrapper import generate_fgsm_examples, generate_jsma_examples, generate_bim_examples
+from .deepfool_wrapper import generate_deepfool_examples, generate_universal_perturbation_examples
 from .pgd.pgd_wrapper import generate_pgdli_examples
 
 
 # TODO: replace pickle with .h5 for Python 2/3 compatibility issue.
-def maybe_generate_adv_examples(sess, model, x, y, X, Y, attack_name, attack_params, use_cache=False, verbose=True, attack_log_fpath=None):
+def maybe_generate_adv_examples(sess, model, x, y, X, Y, attack_name, attack_params, use_cache=False, verbose=True,
+                                attack_log_fpath=None):
     x_adv_fpath = use_cache
     if use_cache and os.path.isfile(x_adv_fpath):
-        print ("Loading adversarial examples from [%s]." % os.path.basename(x_adv_fpath))
+        print("Loading adversarial examples from [%s]." % os.path.basename(x_adv_fpath))
         X_adv, duration = pickle.load(open(x_adv_fpath, "rb"))
     else:
         time_start = time.time()
@@ -66,4 +64,3 @@ def generate_adv_examples(sess, model, x, y, X, Y, attack_name, attack_params, v
     X_adv = generate_adv_examples_func(sess, model, x, y, X, Y, attack_params, verbose, attack_log_fpath)
 
     return X_adv
-

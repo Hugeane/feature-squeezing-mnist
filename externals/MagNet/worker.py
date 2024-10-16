@@ -12,9 +12,9 @@ matplotlib.use('Agg')
 from scipy.stats import entropy
 from numpy.linalg import norm
 from matplotlib.ticker import FuncFormatter
-from keras.models import Sequential, load_model
-from keras.activations import softmax
-from keras.layers import Lambda
+from tensorflow.keras.models import Sequential, load_model
+from tensorflow.keras.activations import softmax
+from tensorflow.keras.layers import Lambda
 import numpy as np
 import pylab
 import os
