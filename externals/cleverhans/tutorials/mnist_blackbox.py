@@ -110,7 +110,7 @@ def substitute_model(img_rows=28, img_cols=28, nb_classes=10):
     model = Sequential()
 
     # Find out the input shape ordering
-    if keras.backend.image_dim_ordering() == 'th':
+    if keras.backend.image_data_format() == 'channels_first':
         input_shape = (1, img_rows, img_cols)
     else:
         input_shape = (img_rows, img_cols, 1)

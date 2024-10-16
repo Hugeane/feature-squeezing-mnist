@@ -88,11 +88,11 @@ class CarliniL2:
         self.output = model.predict(self.newimg)
         
         # distance to the input data
-        self.l2dist = tf.reduce_sum(tf.square(self.newimg-(tf.tanh(self.timg) * self.boxmul + self.boxplus)),[1,2,3])
+        self.l2dist = tf.compat.v1.reduce_sum(tf.square(self.newimg-(tf.tanh(self.timg) * self.boxmul + self.boxplus)),[1,2,3])
         
         # compute the probability of the label class versus the maximum other
-        real = tf.reduce_sum((self.tlab)*self.output,1)
-        other = tf.reduce_max((1-self.tlab)*self.output - (self.tlab*10000),1)
+        real = tf.compat.v1.reduce_sum((self.tlab)*self.output,1)
+        other = tf.compat.v1.reduce_max((1-self.tlab)*self.output - (self.tlab*10000),1)
 
         if self.TARGETED:
             # if targetted, optimize for making the other class most likely

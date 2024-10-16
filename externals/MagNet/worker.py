@@ -18,7 +18,7 @@ from tensorflow.keras.layers import Lambda
 import numpy as np
 import pylab
 import os
-from utils import prepare_data
+from .utils import prepare_data
 import utils
 import matplotlib.pyplot as plt
 import six

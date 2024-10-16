@@ -17,7 +17,7 @@ class Attack:
         :param back: The backend to use. Either 'tf' (default) or 'th'.
         :param sess: The tf session to run graphs in (use None for Theano)
         """
-        if not(back == 'tf' or back == 'th'):
+        if not (back == 'tf' or back == 'th'):
             raise ValueError("Backend argument must either be 'tf' or 'th'.")
         if back == 'tf' and sess is None:
             raise Exception("A tf session was not provided in sess argument.")
@@ -80,7 +80,7 @@ class Attack:
             if not hasattr(self, "_x") and not hasattr(self, "_x_adv"):
                 input_shape = list(x_val.shape)
                 input_shape[0] = None
-                self._x = tf.placeholder(tf.float32, shape=input_shape)
+                self._x = tf.compat.v1.placeholder(tf.float32, shape=input_shape)
                 self._x_adv = self.generate(self._x, **kwargs)
             self.inf_loop = False
         else:
@@ -107,6 +107,7 @@ class FastGradientMethod(Attack):
     the Fast Gradient Method.
     Paper link: https://arxiv.org/abs/1412.6572
     """
+
     def __init__(self, model, back='tf', sess=None):
         """
         Create a FastGradientMethod instance.
@@ -165,7 +166,7 @@ class FastGradientMethod(Attack):
         if not hasattr(self, "_x"):
             input_shape = list(x_val.shape)
             input_shape[0] = None
-            self._x = tf.placeholder(tf.float32, shape=input_shape)
+            self._x = tf.compat.v1.placeholder(tf.float32, shape=input_shape)
             self._x_adv = self.generate(self._x, **kwargs)
 
         # Run symbolic graph without or with true labels
@@ -220,6 +221,7 @@ class BasicIterativeMethod(Attack):
     hard labels for this attack; no label smoothing.
     Paper link: https://arxiv.org/pdf/1607.02533.pdf
     """
+
     def __init__(self, model, back='tf', sess=None):
         """
         Create a BasicIterativeMethod instance.
@@ -237,8 +239,8 @@ class BasicIterativeMethod(Attack):
 
         # Fix labels to the first model predictions for loss computation
         model_preds = self.model(x)
-        preds_max = tf.reduce_max(model_preds, 1, keep_dims=True)
-        y = tf.to_float(tf.equal(model_preds, preds_max))
+        preds_max = tf.reduce_max(model_preds, 1, keepdims=True)
+        y = tf.compat.v1.to_float(tf.equal(model_preds, preds_max))
         fgsm_params = {'eps': self.eps_iter, 'y': y, 'ord': self.ord}
 
         for i in range(self.nb_iter):
@@ -311,6 +313,7 @@ class SaliencyMapMethod(Attack):
     The Jacobian-based Saliency Map Method (Papernot et al. 2016).
     Paper link: https://arxiv.org/pdf/1511.07528.pdf
     """
+
     def __init__(self, model, back='tf', sess=None):
         """
         Create a SaliencyMapMethod instance.
@@ -368,7 +371,7 @@ class SaliencyMapMethod(Attack):
         if not hasattr(self, "_x"):
             input_shape = list(x_val.shape)
             input_shape[0] = None
-            self._x = tf.placeholder(tf.float32, shape=input_shape)
+            self._x = tf.compat.v1.placeholder(tf.float32, shape=input_shape)
             self._x_adv = self.generate(self._x, **kwargs)
 
         # Run symbolic graph without or with true labels

@@ -17,7 +17,7 @@ from .utils import batch_indices, _ArgsWrapper
 import theano
 import theano.tensor as T
 
-import keras
+import tensorflow.keras as keras
 
 floatX = theano.config.floatX
 
@@ -141,7 +141,6 @@ def th_model_train(x, y, predictions, params, X_train, Y_train, save=False,
 
         prev = time.time()
         for batch in range(nb_batches):
-
             # Compute batch start and end indices
             start, end = batch_indices(batch, len(X_train), args.batch_size)
 
@@ -210,7 +209,7 @@ def th_model_eval(x, y, model, X_test, Y_test, args=None):
         # The last batch may be smaller than all others, so we need to
         # account for variable batch size here
         accuracy += cur_batch_size * \
-            eval_step(X_test[start:end], Y_test[start:end])
+                    eval_step(X_test[start:end], Y_test[start:end])
     assert end >= len(X_test)
 
     # Divide by number of examples to get final value

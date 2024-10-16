@@ -1,16 +1,18 @@
-import tensorflow as tf
-import numpy as np
-from keras.models import Model
+import os
+import sys
 
-import sys, os
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.models import Model
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.output import disablePrint, enablePrint
-from utils import load_externals
-from deepfool import deepfool
-from universal_pert import universal_perturbation
+from externals.universal.python.deepfool import deepfool
+from externals.universal.python.universal_pert import universal_perturbation
 
 import warnings
 import click
+
 
 def override_params(default, update):
     for key in default:
@@ -39,9 +41,11 @@ def prepare_attack(sess, model, x, y, X, Y):
     dydx = [tf.gradients(scalar_out[i], [persisted_input])[0] for i in range(0, nb_classes)]
 
     print('>> Computing gradient function...')
+
     def grad_fs(image_inp, inds): return [sess.run(dydx[i], feed_dict={persisted_input: image_inp}) for i in inds]
 
     return f, grad_fs
+
 
 def generate_deepfool_examples(sess, model, x, y, X, Y, attack_params, verbose, attack_log_fpath):
     """
@@ -65,7 +69,7 @@ def generate_deepfool_examples(sess, model, x, y, X, Y, attack_params, verbose, 
                            fill_char='>', empty_char='-') as bar:
         # Loop over the samples we want to perturb into adversarial examples
         for i in bar:
-            image = X[i:i+1,:,:,:]
+            image = X[i:i + 1, :, :, :]
 
             if not verbose:
                 disablePrint(attack_log_fpath)

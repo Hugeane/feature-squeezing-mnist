@@ -107,8 +107,8 @@ class CarliniL0:
         
         output = model.predict(newimg)
         
-        real = tf.reduce_sum((tlab)*output,1)
-        other = tf.reduce_max((1-tlab)*output - (tlab*10000),1)
+        real = tf.compat.v1.reduce_sum((tlab)*output,1)
+        other = tf.compat.v1.reduce_max((1-tlab)*output - (tlab*10000),1)
         if self.TARGETED:
             # if targetted, optimize for making the other class most likely
             loss1 = tf.maximum(0.0, other-real+self.confidence)

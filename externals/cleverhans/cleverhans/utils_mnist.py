@@ -17,7 +17,8 @@ def data_mnist(datadir='/tmp/'):
     """
 
     if 'tensorflow' in sys.modules:
-        from tensorflow.examples.tutorials.mnist import input_data
+
+        import utils.tf_mnist_input_data as input_data
         mnist = input_data.read_data_sets(datadir, one_hot=True, reshape=False)
         X_train = np.vstack((mnist.train.images, mnist.validation.images))
         Y_train = np.vstack((mnist.train.labels, mnist.validation.labels))
@@ -26,9 +27,9 @@ def data_mnist(datadir='/tmp/'):
     else:
         warnings.warn("cleverhans support for Theano is deprecated and "
                       "will be dropped on 2017-11-08.")
-        import keras
-        from keras.datasets import mnist
-        from keras.utils import np_utils
+        import tensorflow.keras as keras
+        import tensorflow.keras.utils as k_utils
+        from tensorflow.keras.datasets import mnist
 
         # These values are specific to MNIST
         img_rows = 28
@@ -38,7 +39,11 @@ def data_mnist(datadir='/tmp/'):
         # the data, shuffled and split between train and test sets
         (X_train, y_train), (X_test, y_test) = mnist.load_data()
 
-        if keras.backend.image_dim_ordering() == 'th':
+        # tf2更新
+        # th: Theano 通道在前      th -> channels_first   [样本数量, 通道数, 行, 列]
+        # tf: TensorFlow 通道在后  tf -> channels_last    [样本数量, 行, 列, 通道数]
+        # if keras.backend.image_dim_ordering() == 'th'
+        if keras.backend.image_data_format() == 'channels_first':
             X_train = X_train.reshape(X_train.shape[0], 1, img_rows, img_cols)
             X_test = X_test.reshape(X_test.shape[0], 1, img_rows, img_cols)
 
@@ -48,8 +53,8 @@ def data_mnist(datadir='/tmp/'):
         X_test /= 255
 
         # convert class vectors to binary class matrices
-        Y_train = np_utils.to_categorical(y_train, nb_classes)
-        Y_test = np_utils.to_categorical(y_test, nb_classes)
+        Y_train = k_utils.to_categorical(y_train, nb_classes)
+        Y_test = k_utils.to_categorical(y_test, nb_classes)
 
     print('X_train shape:', X_train.shape)
     print(X_train.shape[0], 'train samples')

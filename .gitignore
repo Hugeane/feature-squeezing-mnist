@@ -105,5 +105,7 @@ ENV/
 
 results*
 
+local*
+
 # MacOS
 .DS_Store

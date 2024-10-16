@@ -157,10 +157,10 @@ def adaptive_CarliniL2(sess, model, X, Y_target, eval_dir, batch_size, confidenc
     print("tf_squezers: %s" % tf_squeezers)
     y_squeezed_pred_list = [model(func(x_star)) for func in tf_squeezers]
 
-    coeff = tf.placeholder(shape=(N0,), dtype=tf.float32)
-    l2dist = tf.reduce_sum(tf.square(x_star - x), [1, 2, 3])
-    ground_truth_logits = tf.reduce_sum(y * y_pred_logits, 1)
-    top_other_logits = tf.reduce_max((1 - y) * y_pred_logits - (y * 10000), 1)
+    coeff = tf.compat.v1.placeholder(shape=(N0,), dtype=tf.float32)
+    l2dist = tf.compat.v1.reduce_sum(tf.square(x_star - x), [1, 2, 3])
+    ground_truth_logits = tf.compat.v1.reduce_sum(y * y_pred_logits, 1)
+    top_other_logits = tf.compat.v1.reduce_max((1 - y) * y_pred_logits - (y * 10000), 1)
 
     # Untargeted attack, minimize the ground_truth_logits.
     # target_penalty = tf.maximum(0., ground_truth_logits - top_other_logits)

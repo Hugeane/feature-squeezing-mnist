@@ -26,6 +26,7 @@ class _FlagsWrapper(_ArgsWrapper):
     Plain _ArgsWrapper should be used instead if the support for FLAGS
     is removed.
     """
+
     def __getattr__(self, name):
         val = self.args.get(name)
         if val is None:
@@ -131,9 +132,9 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
     if predictions_adv is not None:
         loss = (loss + model_loss(y, predictions_adv)) / 2
 
-    train_step = tf.train.AdadeltaOptimizer(learning_rate=args.learning_rate,
-                                            rho=0.95,
-                                            epsilon=1e-08).minimize(loss)
+    train_step = tf.compat.v1.train.AdadeltaOptimizer(learning_rate=args.learning_rate,
+                                                      rho=0.95,
+                                                      epsilon=1e-08).minimize(loss)
 
     with sess.as_default():
         if hasattr(tf, "global_variables_initializer"):
@@ -144,7 +145,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
         else:
             warnings.warn("Update your copy of tensorflow; future versions of "
                           "cleverhans may drop support for this version.")
-            sess.run(tf.initialize_all_variables())
+            sess.run(tf.compat.v1.initialize_all_variables())
 
         for epoch in six.moves.xrange(args.nb_epochs):
             if verbose:
@@ -156,7 +157,6 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
 
             prev = time.time()
             for batch in range(nb_batches):
-
                 # Compute batch start and end indices
                 start, end = batch_indices(
                     batch, len(X_train), args.batch_size)
@@ -174,7 +174,7 @@ def model_train(sess, x, y, predictions, X_train, Y_train, save=False,
 
         if save:
             save_path = os.path.join(args.train_dir, args.filename)
-            saver = tf.train.Saver()
+            saver = tf.compat.v1.train.Saver()
             saver.save(sess, save_path)
             print("Completed model training and saved at:" + str(save_path))
         else:
@@ -208,7 +208,7 @@ def model_eval(sess, x, y, model, X_test, Y_test, args=None):
 
     # Define accuracy symbolically
     correct_preds = tf.equal(tf.argmax(y, axis=-1), tf.argmax(model, axis=-1))
-    acc_value = tf.reduce_mean(tf.to_float(correct_preds))
+    acc_value = tf.reduce_mean(tf.compat.v1.to_float(correct_preds))
 
     # Init result var
     accuracy = 0.0
@@ -255,7 +255,7 @@ def tf_model_load(sess):
     :return:
     """
     with sess.as_default():
-        saver = tf.train.Saver()
+        saver = tf.compat.v1.train.Saver()
         saver.restore(sess, os.path.join(FLAGS.train_dir, FLAGS.filename))
 
     return True

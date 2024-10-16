@@ -13,6 +13,7 @@ from . import utils_tf
 from . import utils
 
 from tensorflow.python.platform import flags
+
 FLAGS = flags.FLAGS
 
 
@@ -42,29 +43,29 @@ def fgm(x, preds, y=None, eps=0.3, ord=np.inf, clip_min=None, clip_max=None):
 
     if y is None:
         # Using model predictions as ground truth to avoid label leaking
-        preds_max = tf.reduce_max(preds, 1, keep_dims=True)
-        y = tf.to_float(tf.equal(preds, preds_max))
-    y = y / tf.reduce_sum(y, 1, keep_dims=True)
+        preds_max = tf.compat.v1.reduce_max(preds, 1, keep_dims=True)
+        y = tf.compat.v1.to_float(tf.equal(preds, preds_max))
+    y = y / tf.compat.v1.reduce_sum(y, 1, keep_dims=True)
 
     # Compute loss
     loss = utils_tf.model_loss(y, preds, mean=False)
 
     # Define gradient of loss wrt input
-    grad, = tf.gradients(loss, x)
+    grad, = tf.compat.v1.gradients(loss, x)
 
     if ord == np.inf:
         # Take sign of gradient
         signed_grad = tf.sign(grad)
     elif ord == 1:
         reduc_ind = list(xrange(1, len(x.get_shape())))
-        signed_grad = grad / tf.reduce_sum(tf.abs(grad),
-                                           reduction_indices=reduc_ind,
-                                           keep_dims=True)
+        signed_grad = grad / tf.compat.v1.reduce_sum(tf.abs(grad),
+                                                     reduction_indices=reduc_ind,
+                                                     keep_dims=True)
     elif ord == 2:
         reduc_ind = list(xrange(1, len(x.get_shape())))
-        signed_grad = grad / tf.sqrt(tf.reduce_sum(tf.square(grad),
-                                                   reduction_indices=reduc_ind,
-                                                   keep_dims=True))
+        signed_grad = grad / tf.sqrt(tf.compat.v1.reduce_sum(tf.square(grad),
+                                                             reduction_indices=reduc_ind,
+                                                             keep_dims=True))
     else:
         raise NotImplementedError("Only L-inf, L1 and L2 norms are "
                                   "currently implemented.")
@@ -73,11 +74,11 @@ def fgm(x, preds, y=None, eps=0.3, ord=np.inf, clip_min=None, clip_max=None):
     scaled_signed_grad = eps * signed_grad
 
     # Add perturbation to original example to obtain adversarial example
-    adv_x = tf.stop_gradient(x + scaled_signed_grad)
+    adv_x = tf.compat.v1.stop_gradient(x + scaled_signed_grad)
 
     # If clipping is needed, reset all values outside of [clip_min, clip_max]
     if (clip_min is not None) and (clip_max is not None):
-        adv_x = tf.clip_by_value(adv_x, clip_min, clip_max)
+        adv_x = tf.compat.v1.clip_by_value(adv_x, clip_min, clip_max)
 
     return adv_x
 
@@ -380,7 +381,7 @@ def jacobian_augmentation(sess, x, X_sub_prev, Y_sub, grads, lmbda,
         grad_val = sess.run([tf.sign(grad)], feed_dict=feed_dict)[0]
 
         # Create new synthetic point in adversary substitute training set
-        X_sub[2*ind] = X_sub[ind] + lmbda * grad_val
+        X_sub[2 * ind] = X_sub[ind] + lmbda * grad_val
 
     # Return augmented training data (needs to be labeled afterwards)
     return X_sub

@@ -4,23 +4,24 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from distutils.version import LooseVersion
-import keras
-from keras.utils import np_utils
-from keras.models import Sequential
-from keras.layers import Dense, Activation, Flatten
+import tensorflow.keras as keras
+import tensorflow.keras.utils as k_utils
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Activation, Flatten
 import numpy as np
 from six.moves import xrange
 
 if LooseVersion(keras.__version__) >= LooseVersion('2.0.0'):
-    from keras.layers import Conv2D
+    from tensorflow.keras.layers import Conv2D
 else:
-    from keras.layers import Convolution2D
+    from tensorflow.keras.layers import Convolution2D
 
 
 class _ArgsWrapper(object):
     """
     Wrapper that allows attribute access to dictionaries
     """
+
     def __init__(self, args):
         if not isinstance(args, dict):
             args = vars(args)
@@ -83,7 +84,7 @@ def random_targets(gt, nb_classes):
         in_cl = gt == class_ind
         result[in_cl] = np.random.choice(other_classes(nb_classes, class_ind))
 
-    return np_utils.to_categorical(np.asarray(result), nb_classes)
+    return k_utils.to_categorical(np.asarray(result), nb_classes)
 
 
 def conv_2d(filters, kernel_shape, strides, padding, input_shape=None):
@@ -141,7 +142,7 @@ def cnn_model(logits=False, input_ph=None, img_rows=28, img_cols=28,
     model = Sequential()
 
     # Define the layers successively (convolution layers are version dependent)
-    if keras.backend.image_dim_ordering() == 'th':
+    if keras.backend.image_data_format() == 'channels_first':
         input_shape = (channels, img_rows, img_cols)
     else:
         input_shape = (img_rows, img_cols, channels)
@@ -180,7 +181,7 @@ def pair_visual(original, adversarial, figure=None):
     import matplotlib.pyplot as plt
 
     # Ensure our inputs are of proper shape
-    assert(len(original.shape) == 2 or len(original.shape) == 3)
+    assert (len(original.shape) == 2 or len(original.shape) == 3)
 
     # To avoid creating figures per input sample, reuse the sample plot
     if figure is None:
@@ -229,7 +230,7 @@ def grid_visual(data):
     current_row = 0
     for y in xrange(num_rows):
         for x in xrange(num_cols):
-            figure.add_subplot(num_cols, num_rows, (x+1)+(y*num_rows))
+            figure.add_subplot(num_cols, num_rows, (x + 1) + (y * num_rows))
             plt.axis('off')
 
             if num_channels == 1:

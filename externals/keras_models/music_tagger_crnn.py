@@ -12,17 +12,14 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 import numpy as np
-from keras import backend as K
-from keras.layers import Input, Dense
-from keras.models import Model
-from keras.layers import Dense, Dropout, Reshape, Permute
-from keras.layers.convolutional import Convolution2D
-from keras.layers.convolutional import MaxPooling2D, ZeroPadding2D
-from keras.layers.normalization import BatchNormalization
-from keras.layers.advanced_activations import ELU
-from keras.layers.recurrent import GRU
-from keras.utils.data_utils import get_file
-from keras.utils.layer_utils import convert_all_kernels_in_model
+import tensorflow.keras as keras
+from tensorflow.keras.layers import Input, Dense
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Dense, Dropout, Reshape, Permute
+from tensorflow.keras.layers import Convolution2D,MaxPooling2D, ZeroPadding2D,BatchNormalization
+from tensorflow.keras.layers import ELU, GRU
+from tensorflow.keras.utils import get_file
+from utils.upgrade_layer_utils import convert_all_kernels_in_model
 from audio_conv_utils import decode_predictions, preprocess_input
 
 TH_WEIGHTS_PATH = 'https://github.com/fchollet/deep-learning-models/releases/download/v0.3/music_tagger_crnn_weights_tf_kernels_th_dim_ordering.h5'
@@ -67,7 +64,7 @@ def MusicTaggerCRNN(weights='msd', input_tensor=None,
                          '(pre-training on Million Song Dataset).')
 
     # Determine proper input shape
-    if K.image_dim_ordering() == 'th':
+    if keras.backend.image_data_format() == 'channels_first':
         input_shape = (1, 96, 1366)
     else:
         input_shape = (96, 1366, 1)
@@ -81,7 +78,7 @@ def MusicTaggerCRNN(weights='msd', input_tensor=None,
             melgram_input = input_tensor
 
     # Determine input axis
-    if K.image_dim_ordering() == 'th':
+    if keras.backend.image_data_format() == 'channels_first':
         channel_axis = 1
         freq_axis = 2
         time_axis = 3
@@ -119,7 +116,7 @@ def MusicTaggerCRNN(weights='msd', input_tensor=None,
     x = MaxPooling2D(pool_size=(4, 4), strides=(4, 4), name='pool4')(x)
 
     # reshaping
-    if K.image_dim_ordering() == 'th':
+    if keras.backend.image_data_format() == 'channels_first':
         x = Permute((3, 1, 2))(x)
     x = Reshape((15, 128))(x)
 
@@ -136,7 +133,7 @@ def MusicTaggerCRNN(weights='msd', input_tensor=None,
         return model
     else:
         # Load weights
-        if K.image_dim_ordering() == 'tf':
+        if keras.backend.image_data_format() == 'channels_last':
             weights_path = get_file('music_tagger_crnn_weights_tf_kernels_tf_dim_ordering.h5',
                                     TF_WEIGHTS_PATH,
                                     cache_subdir='models')

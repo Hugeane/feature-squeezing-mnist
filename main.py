@@ -4,21 +4,12 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import os
-import pdb
-import pickle
-import time
-import random
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.platform import app
-from tensorflow.python.platform import flags
 from tensorflow import keras
 from tensorflow.python.keras import backend as k_b
-from datasets import MNISTDataset
-from datasets import get_correct_prediction_idx, evaluate_adversarial_examples, calculate_mean_confidence, \
-    calculate_accuracy
-from utils import visualization
+from tensorflow.python.platform import flags
 
 FLAGS = flags.FLAGS
 
@@ -202,7 +193,7 @@ def main(argv=None):
         min_clip = np.clip(X_test - epsilon, 0, 1)
 
     for attack_string in attack_string_list:
-        attack_log_fpath = os.path.join(adv_log_folder, "%s_%s.log" % (task_id, attack_string))
+        attack_log_fpath = os.path.join(adv_log_folder, "%s_%s.log" % (task_id, str(attack_string).replace('?', '_')))
         attack_name, attack_params = parse_params(attack_string)
         print("\nRunning attack: %s %s" % (attack_name, attack_params))
 
@@ -221,13 +212,12 @@ def main(argv=None):
             attack_params['targeted'] = False
             Y_test_target = Y_test.copy()
 
-        x_adv_fname = "%s_%s.pickle" % (task_id, attack_string)
+        x_adv_fname = "%s_%s.pickle" % (task_id, str(attack_string).replace('?', '_'))
         x_adv_fpath = os.path.join(X_adv_cache_folder, x_adv_fname)
 
         X_test_adv, aux_info = maybe_generate_adv_examples(sess, model, x, y, X_test, Y_test_target, attack_name,
                                                            attack_params, use_cache=x_adv_fpath, verbose=FLAGS.verbose,
                                                            attack_log_fpath=attack_log_fpath)
-
         if FLAGS.clip > 0:
             # This is L-inf clipping.
             X_test_adv = np.clip(X_test_adv, min_clip, max_clip)
@@ -243,7 +233,7 @@ def main(argv=None):
 
         # 5.0 Output predictions.
         Y_test_adv_pred = model.predict(X_test_adv)
-        predictions_fpath = os.path.join(predictions_folder, "%s.npy" % attack_string)
+        predictions_fpath = os.path.join(predictions_folder, "%s.npy" % str(attack_string).replace('?', '_'))
         np.save(predictions_fpath, Y_test_adv_pred, allow_pickle=False)
 
         # 5.1 Evaluate the adversarial examples being discretized to uint8.
@@ -321,7 +311,4 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
-    # main()
-    from attacks import maybe_generate_adv_examples
-    from utils.squeeze import reduce_precision_py
-    from utils.parameter_parser import parse_params
+    main()

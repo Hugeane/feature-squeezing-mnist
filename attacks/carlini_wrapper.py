@@ -30,8 +30,8 @@ class CarliniModelWrapper:
         """
         return self.model(X)
 
-from keras.models import Model
-from keras.layers import Lambda, Input
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Lambda, Input
 
 def convert_model(model, input_shape):
     # Output model: accept [-0.5, 0.5] input range instead of [0,1], output logits instead of softmax.
