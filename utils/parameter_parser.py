@@ -1,5 +1,5 @@
 from urllib import parse as urlparse
-
+import numpy as np
 
 def isfloat(value):
     try:

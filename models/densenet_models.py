@@ -40,7 +40,7 @@ def densenet_cifar10_model(logits=False, input_range_type=1, pre_filter=lambda x
     img_rows, img_cols = 32, 32
     img_channels = 3
 
-    img_dim = (img_channels, img_rows, img_cols) if K.image_data_format() == "th" else (
+    img_dim = (img_channels, img_rows, img_cols) if K.image_data_format() == "channels_first" else (
         img_rows, img_cols, img_channels)
     depth = 40
     nb_dense_block = 3
@@ -89,7 +89,7 @@ def densenet_cifar10_model(logits=False, input_range_type=1, pre_filter=lambda x
 def __create_dense_net(nb_classes, img_input, include_top, depth=40, nb_dense_block=3, growth_rate=12, nb_filter=-1,
                        nb_layers_per_block=-1, bottleneck=False, reduction=0.0, dropout_rate=None, weight_decay=1E-4,
                        activation='softmax'):
-    ''' Build the DenseNet model
+    """ Build the DenseNet model
     Args:
         nb_classes: number of classes
         img_input: tuple of shape (channels, rows, columns) or (rows, columns, channels)
@@ -111,13 +111,13 @@ def __create_dense_net(nb_classes, img_input, include_top, depth=40, nb_dense_bl
         activation: Type of activation at the top layer. Can be one of 'softmax' or 'sigmoid'.
                 Note that if sigmoid is used, classes must be 1.
     Returns: keras tensor with nb_layers of conv_block appended
-    '''
+    """
 
     concat_axis = 1 if K.image_data_format() == 'channels_first' else -1
 
     assert (depth - 4) % 3 == 0, 'Depth must be 3 N + 4'
     if reduction != 0.0:
-        assert reduction <= 1.0 and reduction > 0.0, 'reduction value must lie between 0.0 and 1.0'
+        assert 1.0 >= reduction > 0.0, 'reduction value must lie between 0.0 and 1.0'
 
     # layers in each dense block
     if type(nb_layers_per_block) is list or type(nb_layers_per_block) is tuple:
@@ -170,7 +170,7 @@ def __create_dense_net(nb_classes, img_input, include_top, depth=40, nb_dense_bl
 
     if include_top:
         x = Dense(nb_classes, kernel_regularizer=l2(weight_decay), bias_regularizer=l2(weight_decay))(x)
-        if activation != None:
+        if activation is not None:
             x = Activation(activation)(x)
 
     return x

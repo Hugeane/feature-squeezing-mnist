@@ -15,7 +15,8 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_string('dataset_name', 'MNIST', 'Supported: MNIST, CIFAR-10, ImageNet, SVHN.')
 flags.DEFINE_string('model_name', 'cleverhans',
-                    'Supported: cleverhans, cleverhans_adv_trained and carlini for MNIST; carlini and DenseNet for CIFAR-10;  ResNet50, VGG19, Inceptionv3 and MobileNet for ImageNet; tohinz for SVHN.')
+                    'Supported: cleverhans, cleverhans_adv_trained and carlini for MNIST; carlini and DenseNet for '
+                    'CIFAR-10;  ResNet50, VGG19, Inceptionv3 and MobileNet for ImageNet; tohinz for SVHN.')
 
 flags.DEFINE_boolean('select', True, 'Select correctly classified examples for the experiement.')
 flags.DEFINE_integer('nb_examples', 100, 'The number of examples selected for attacks.')
@@ -23,7 +24,8 @@ flags.DEFINE_boolean('balance_sampling', False, 'Select the same number of examp
 flags.DEFINE_boolean('test_mode', False, 'Only select one sample for each class.')
 
 flags.DEFINE_string('attacks',
-                    "FGSM?eps=0.1;BIM?eps=0.1&eps_iter=0.02;JSMA?targeted=next;CarliniL2?targeted=next&batch_size=100&max_iterations=1000;CarliniL2?targeted=next&batch_size=100&max_iterations=1000&confidence=2",
+                    "FGSM?eps=0.1;BIM?eps=0.1&eps_iter=0.02;JSMA?targeted=next;CarliniL2?targeted=next&batch_size=100"
+                    "&max_iterations=1000;CarliniL2?targeted=next&batch_size=100&max_iterations=1000&confidence=2",
                     'Attack name and parameters in URL style, separated by semicolon.')
 flags.DEFINE_float('clip', -1, 'L-infinity clip on the adversarial perturbations.')
 flags.DEFINE_boolean('visualize', True, 'Output the image examples for each attack, enabled by default.')
@@ -288,15 +290,15 @@ def main(argv=None):
         Test the accuracy with robust classifiers.
         Evaluate the accuracy on all the legitimate examples.
         """
-        from robustness import evaluate_robustness
+        from robustness.base import evaluate_robustness
         result_folder_robustness = os.path.join(FLAGS.result_folder, "robustness")
         fname_prefix = "%s_%s_robustness" % (task_id, attack_string_hash)
-        evaluate_robustness(FLAGS.robustness, model, Y_test_all, X_test_all, Y_test, \
+        evaluate_robustness(FLAGS.robustness, model, Y_test_all, X_test_all, Y_test,
                             attack_string_list, X_test_adv_discretized_list,
                             fname_prefix, selected_idx_vis, result_folder_robustness)
 
-    # 7. Detection experiment.
-    # Example: --detection "FeatureSqueezing?distance_measure=l1&squeezers=median_smoothing_2,bit_depth_4,bilateral_filter_15_15_60;"
+    # 7. Detection experiment. Example: --detection
+    # "FeatureSqueezing?distance_measure=l1&squeezers=median_smoothing_2,bit_depth_4,bilateral_filter_15_15_60;"
     if FLAGS.detection != '':
         from detections.base import DetectionEvaluator
 

@@ -1,22 +1,24 @@
 import numpy as np
-from deepfool import deepfool
+from externals.universal.python.deepfool import deepfool
+
 
 def proj_lp(v, xi, p):
-
     # Project on the lp ball centered at 0 and of radius xi
 
     # SUPPORTS only p = 2 and p = Inf for now
     if p == 2:
-        v = v * min(1, xi/np.linalg.norm(v.flatten(1)))
+        v *= min(1, xi / np.linalg.norm(v.flatten(1)))
         # v = v / np.linalg.norm(v.flatten(1)) * xi
     elif p == np.inf:
         v = np.sign(v) * np.minimum(abs(v), xi)
     else:
-         raise ValueError('Values of p different from 2 and Inf are currently not supported...')
+        raise ValueError('Values of p different from 2 and Inf are currently not supported...')
 
     return v
 
-def universal_perturbation(dataset, f, grads, delta=0.2, max_iter_uni = np.inf, xi=10, p=np.inf, num_classes=10, overshoot=0.02, max_iter_df=10):
+
+def universal_perturbation(dataset, f, grads, delta=0.2, max_iter_uni=np.inf, xi=10, p=np.inf, num_classes=10,
+                           overshoot=0.02, max_iter_df=10):
     """
     :param dataset: Images of size MxHxWxC (M: number of images)
 
@@ -43,27 +45,28 @@ def universal_perturbation(dataset, f, grads, delta=0.2, max_iter_uni = np.inf, 
 
     v = 0
     fooling_rate = 0.0
-    num_images =  np.shape(dataset)[0] # The images should be stacked ALONG FIRST DIMENSION
+    num_images = np.shape(dataset)[0]  # The images should be stacked ALONG FIRST DIMENSION
 
     itr = 0
-    while fooling_rate < 1-delta and itr < max_iter_uni:
+    while fooling_rate < 1 - delta and itr < max_iter_uni:
         # Shuffle the dataset
         np.random.shuffle(dataset)
 
-        print ('Starting pass number ', itr)
+        print('Starting pass number ', itr)
 
         # Go through the data set and compute the perturbation increments sequentially
         for k in range(0, num_images):
-            cur_img = dataset[k:(k+1), :, :, :]
+            cur_img = dataset[k:(k + 1), :, :, :]
 
-            if int(np.argmax(np.array(f(cur_img)).flatten())) == int(np.argmax(np.array(f(cur_img+v)).flatten())):
+            if int(np.argmax(np.array(f(cur_img)).flatten())) == int(np.argmax(np.array(f(cur_img + v)).flatten())):
                 print('>> k = ', k, ', pass #', itr)
 
                 # Compute adversarial perturbation
-                dr,iter,_,_ = deepfool(cur_img + v, f, grads, num_classes=num_classes, overshoot=overshoot, max_iter=max_iter_df)
+                dr, iter, _, _ = deepfool(cur_img + v, f, grads, num_classes=num_classes, overshoot=overshoot,
+                                          max_iter=max_iter_df)
 
                 # Make sure it converged...
-                if iter < max_iter_df-1:
+                if iter < max_iter_df - 1:
                     v = v + dr
 
                     # Project on l_p ball
@@ -83,7 +86,7 @@ def universal_perturbation(dataset, f, grads, delta=0.2, max_iter_uni = np.inf, 
         # Compute the estimated labels in batches
         for ii in range(0, num_batches):
             m = (ii * batch_size)
-            M = min((ii+1)*batch_size, num_images)
+            M = min((ii + 1) * batch_size, num_images)
             est_labels_orig[m:M] = np.argmax(f(dataset[m:M, :, :, :]), axis=1).flatten()
             est_labels_pert[m:M] = np.argmax(f(dataset_perturbed[m:M, :, :, :]), axis=1).flatten()
 

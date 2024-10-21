@@ -4,7 +4,9 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import hashlib
-import sys, os
+import os
+import sys
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from datasets import calculate_accuracy
@@ -18,8 +20,10 @@ class RobustClassifierBase:
     def predict(self, X):
         return self.model_predict(X)
 
+
 from .feature_squeezing import FeatureSqueezingRC
 from .magnet import MagNetRC
+
 
 def get_robust_classifier_by_name(model, rc_name):
     if rc_name.startswith('Base') or rc_name.startswith('none'):
@@ -32,15 +36,17 @@ def get_robust_classifier_by_name(model, rc_name):
         raise Exception("Unknown robust classifier [%s]" % rc)
     return rc
 
-def evaluate_robustness(params_str, model, Y, X, Y_adv, attack_string_list, X_adv_list, fname_prefix, selected_idx_vis, result_folder):
+
+def evaluate_robustness(params_str, model, Y, X, Y_adv, attack_string_list, X_adv_list, fname_prefix, selected_idx_vis,
+                        result_folder):
     if not os.path.isdir(result_folder):
         os.makedirs(result_folder)
     robustness_string_hash = hashlib.sha1(params_str.encode('utf-8')).hexdigest()[:5]
     csv_fname = "%s_%s.csv" % (fname_prefix, robustness_string_hash)
     csv_fpath = os.path.join(result_folder, csv_fname)
-    print ("Saving robustness test results at %s" % csv_fpath)
+    print("Saving robustness test results at %s" % csv_fpath)
 
-    RC_names = [ele.strip() for ele in params_str.split(';') if ele.strip()!= '']
+    RC_names = [ele.strip() for ele in params_str.split(';') if ele.strip() != '']
 
     accuracy_rows = []
     fieldnames = ['RobustClassifier', 'legitimate_%d' % len(X)] + attack_string_list
@@ -56,18 +62,18 @@ def evaluate_robustness(params_str, model, Y, X, Y_adv, attack_string_list, X_ad
         accuracy = calculate_accuracy(rc.predict(X), Y)
         accuracy_rec['legitimate_%d' % len(X)] = accuracy
 
-        img_fpath = os.path.join(result_folder, '%s_%s.png' % (fname_prefix, RC_name) )
+        img_fpath = os.path.join(result_folder, '%s_%s.png' % (fname_prefix, RC_name))
         rows = [legitimate_examples]
 
         for i, attack_name in enumerate(attack_string_list):
             X_adv = X_adv_list[i]
             if hasattr(rc, 'visualize_and_predict'):
                 X_adv_filtered, Y_pred_adv = rc.visualize_and_predict(X_adv)
-                rows += map(lambda x:x[selected_idx_vis], [X_adv, X_adv_filtered])
+                rows += map(lambda x: x[selected_idx_vis], [X_adv, X_adv_filtered])
             else:
                 Y_pred_adv = rc.predict(X_adv)
             accuracy = calculate_accuracy(Y_pred_adv, Y_adv)
-            accuracy_rec[attack_name] = accuracy        
+            accuracy_rec[attack_name] = accuracy
 
         accuracy_rows.append(accuracy_rec)
 
@@ -82,4 +88,3 @@ def evaluate_robustness(params_str, model, Y, X, Y_adv, attack_string_list, X_ad
         writer.writeheader()
         for row in accuracy_rows:
             writer.writerow(row)
-
