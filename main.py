@@ -10,6 +10,7 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.python.keras import backend as k_b
 from tensorflow.python.platform import flags
+from utils import visualization
 
 FLAGS = flags.FLAGS
 
@@ -19,7 +20,7 @@ flags.DEFINE_string('model_name', 'cleverhans',
                     'CIFAR-10;  ResNet50, VGG19, Inceptionv3 and MobileNet for ImageNet; tohinz for SVHN.')
 
 flags.DEFINE_boolean('select', True, 'Select correctly classified examples for the experiement.')
-flags.DEFINE_integer('nb_examples', 100, 'The number of examples selected for attacks.')
+flags.DEFINE_integer('nb_examples', 20, 'The number of examples selected for attacks.')
 flags.DEFINE_boolean('balance_sampling', False, 'Select the same number of examples for each class.')
 flags.DEFINE_boolean('test_mode', False, 'Only select one sample for each class.')
 
@@ -220,6 +221,11 @@ def main(argv=None):
         X_test_adv, aux_info = maybe_generate_adv_examples(sess, model, x, y, X_test, Y_test_target, attack_name,
                                                            attack_params, use_cache=x_adv_fpath, verbose=FLAGS.verbose,
                                                            attack_log_fpath=attack_log_fpath)
+
+        # save images
+        visualization.save_images(original_examples=X_test, adversarial_examples=X_test_adv,
+                                  target_vectors=Y_test_target, prefix=attack_name)
+
         if FLAGS.clip > 0:
             # This is L-inf clipping.
             X_test_adv = np.clip(X_test_adv, min_clip, max_clip)

@@ -5,3 +5,4 @@ urllib3
 matplotlib
 click
 opencv-python==3.4.10.35
+scikit-learn==0.22

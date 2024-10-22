@@ -1,26 +1,24 @@
-import sklearn
-from sklearn.metrics import roc_curve, auc
+import functools
+import operator
+import os
+import sys
+
 import numpy as np
 from scipy.stats import entropy
-from keras.models import Model
-
-import operator
-import functools
-import pdb
-import random
-import sys, os
+from tensorflow.keras.models import Model
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-# from utils.visualization import draw_plot
+from utils.visualization import draw_plot
 from utils.squeeze import get_squeezer_by_name
 from utils.parameter_parser import parse_params
+
 
 def reshape_2d(x):
     if len(x.shape) > 2:
         # Reshape to [#num_examples, ?]
         batch_size = x.shape[0]
         num_dim = functools.reduce(operator.mul, x.shape, 1)
-        x = x.reshape((batch_size, num_dim/batch_size))
+        x = x.reshape((batch_size, num_dim / batch_size))
     return x
 
 
@@ -31,14 +29,16 @@ def reshape_2d(x):
 def softmax(z):
     assert len(z.shape) == 2
     s = np.max(z, axis=1)
-    s = s[:, np.newaxis] # necessary step to do broadcasting
+    s = s[:, np.newaxis]  # necessary step to do broadcasting
     e_x = np.exp(z - s)
     div = np.sum(e_x, axis=1)
-    div = div[:, np.newaxis] # dito
+    div = div[:, np.newaxis]  # dito
     return e_x / div
 
 
 from sklearn.preprocessing import normalize
+
+
 def unit_norm(x):
     """
     x: a 2D array: (batch_size, vector_length)
@@ -46,8 +46,8 @@ def unit_norm(x):
     return normalize(x, axis=1)
 
 
-l1_dist = lambda x1,x2: np.sum(np.abs(x1 - x2), axis=tuple(range(len(x1.shape))[1:]))
-l2_dist = lambda x1,x2: np.sum((x1-x2)**2, axis=tuple(range(len(x1.shape))[1:]))**.5
+l1_dist = lambda x1, x2: np.sum(np.abs(x1 - x2), axis=tuple(range(len(x1.shape))[1:]))
+l2_dist = lambda x1, x2: np.sum((x1 - x2) ** 2, axis=tuple(range(len(x1.shape))[1:])) ** .5
 
 
 # Note: KL-divergence is not symentric.
@@ -62,7 +62,7 @@ def kl(x1, x2):
 
     # pdb.set_trace()
     e = entropy(x1_2d_t, x2_2d_t)
-    e[np.where(e==np.inf)] = 2
+    e[np.where(e == np.inf)] = 2
     return e
 
 
@@ -71,7 +71,7 @@ class FeatureSqueezingDetector:
         self.model = model
         subject, params = parse_params(param_str)
 
-        layer_id = len(model.layers)-1
+        layer_id = len(model.layers) - 1
         normalizer = 'none'
         metric = params['distance_measure']
         squeezers_name = params['squeezers'].split(',')
@@ -87,11 +87,11 @@ class FeatureSqueezingDetector:
         return get_squeezer_by_name(name, 'python')
 
     def get_normalizer_by_name(self, name):
-        d = {'unit_norm': unit_norm, 'softmax': softmax, 'none': lambda x:x}
+        d = {'unit_norm': unit_norm, 'softmax': softmax, 'none': lambda x: x}
         return d[name]
 
     def get_metric_by_name(self, name):
-        d = {'kl_f': lambda x1,x2: kl(x1, x2), 'kl_b': lambda x1,x2: kl(x2, x1), 'l1': l1_dist, 'l2': l2_dist}
+        d = {'kl_f': lambda x1, x2: kl(x1, x2), 'kl_b': lambda x1, x2: kl(x2, x1), 'l1': l1_dist, 'l2': l2_dist}
         return d[name]
 
     def set_config(self, layer_id, normalizer_name, metric_name, squeezers_name):
@@ -117,7 +117,7 @@ class FeatureSqueezingDetector:
 
         for layer in model.layers:
             shape_size = functools.reduce(operator.mul, layer.output_shape[1:])
-            print (layer.name, shape_size)
+            print(layer.name, shape_size)
 
         xs = np.arange(len(model.layers))
 
@@ -150,12 +150,12 @@ class FeatureSqueezingDetector:
                     series.append(mean_dist)
 
                 series = np.array(series).astype(np.double)
-                series = series/np.max(series)
+                series /= np.max(series)
                 series_list.append(series)
                 label_list.append("%s_%s" % (normalizer, distance_metric_name))
 
                 layer_id = np.argmax(series)
-                print ("Best: Metric-%s at Layer-%d, normalized by %s" % (distance_metric_name, layer_id, normalizer))
+                print("Best: Metric-%s at Layer-%d, normalized by %s" % (distance_metric_name, layer_id, normalizer))
                 ret.append([layer_id, normalizer, distance_metric_name])
 
             draw_plot(xs, series_list, label_list, "./%s_%s.png" % (self.name_prefix, normalizer))
@@ -200,7 +200,6 @@ class FeatureSqueezingDetector:
         layer_output = Model(inputs=self.model.layers[0].input, outputs=self.model.layers[layer_id].output)
         return layer_output.predict(X)
 
-
     def output_distance_csv(self, X_list, field_name_list, csv_fpath):
         from utils.output import write_to_csv
         distances_list = []
@@ -220,7 +219,6 @@ class FeatureSqueezingDetector:
 
         write_to_csv(to_csv, csv_fpath, field_name_list)
 
-
     # Only examine the legitimate examples to get the threshold, ensure low False Positive rate.
     def train(self, X, Y):
         """
@@ -232,7 +230,7 @@ class FeatureSqueezingDetector:
         """
 
         if self.threshold is not None:
-            print ("Loaded a pre-defined threshold value %f" % self.threshold)
+            print("Loaded a pre-defined threshold value %f" % self.threshold)
         else:
             layer_id, normalizer_name, metric_name, squeezers_name = self.get_config()
 
@@ -240,10 +238,10 @@ class FeatureSqueezingDetector:
             X_neg = X[neg_idx]
             distances = self.get_distance(X_neg)
 
-            selected_distance_idx = int(np.ceil(len(X_neg) * (1-self.train_fpr)))
-            threshold = sorted(distances)[selected_distance_idx-1]
+            selected_distance_idx = int(np.ceil(len(X_neg) * (1 - self.train_fpr)))
+            threshold = sorted(distances)[selected_distance_idx - 1]
             self.threshold = threshold
-            print ("Selected %f as the threshold value." % self.threshold)
+            print("Selected %f as the threshold value." % self.threshold)
         return self.threshold
 
     def test(self, X):
