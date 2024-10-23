@@ -1,11 +1,12 @@
-tensorflow-gpu==1.1.0
-keras==2.0.4
-numpy==1.13.3
+tensorflow-gpu==2.4.0
+cntk==2.5
+pillow==8.0
+urllib3
 matplotlib
-h5py
-pillow
-scikit-learn
 click
-future
-opencv-python
-tinydb
+opencv-python==3.4.10.35
+scikit-learn==0.22
+tinydb==4.2
+
+cuDNN v8.0.5
+CUDA 11.0

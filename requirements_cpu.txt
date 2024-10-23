@@ -1,4 +1,4 @@
-tensorflow 2.4.0
+tensorflow==2.4.0
 cntk==2.5
 pillow==8.0
 urllib3
@@ -6,3 +6,4 @@ matplotlib
 click
 opencv-python==3.4.10.35
 scikit-learn==0.22
+tinydb==4.2

@@ -196,9 +196,25 @@ class FeatureSqueezingDetector:
 
         return distance
 
+    # def eval_layer_output(self, X, layer_id):
+    #     layer_output = Model(inputs=self.model.layers[0].input, outputs=self.model.layers[layer_id].output)
+    #     return layer_output.predict(x=X, batch_size=X.shape[0], steps=1)
+
     def eval_layer_output(self, X, layer_id):
+        # 定义用于输出模型指定层的输出
         layer_output = Model(inputs=self.model.layers[0].input, outputs=self.model.layers[layer_id].output)
-        return layer_output.predict(X)
+
+        # 定义 batch_size
+        batch_size = 10  # 你可以调整这个值
+
+        # 获取输入数据的样本数
+        n_samples = X.shape[0]
+
+        # 计算需要的步数 (steps)
+        steps = n_samples // batch_size
+
+        # 调用 predict 并指定 batch_size 和 steps
+        return layer_output.predict(X, batch_size=batch_size, steps=steps)
 
     def output_distance_csv(self, X_list, field_name_list, csv_fpath):
         from utils.output import write_to_csv
