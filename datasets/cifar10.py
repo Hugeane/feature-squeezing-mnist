@@ -21,6 +21,18 @@ class CIFAR10Dataset:
         self.image_size = 32
         self.num_channels = 3
         self.num_classes = 10
+        self.cifar10_classes = {
+            0: 'airplane',
+            1: 'automobile',
+            2: 'bird',
+            3: 'cat',
+            4: 'deer',
+            5: 'dog',
+            6: 'frog',
+            7: 'horse',
+            8: 'ship',
+            9: 'truck'
+        }
 
     def load_data(self):
         """Loads [CIFAR10 dataset](https://www.cs.toronto.edu/~kriz/cifar.html).
@@ -118,6 +130,23 @@ class CIFAR10Dataset:
         model.load_weights(model_weights_fpath)
         print("---Loaded CIFAR-10-%s model.\n" % model_name)
         return model
+
+    def print_predict(self, origin_test_tensor_array, adv_test_tensor_array, standard_result_tensor_array):
+        # 假设 Y_test_adv_pred 是对抗样本的预测输出（概率向量），形状为 (batch_size, num_classes)
+        # 使用 np.argmax 获取每个样本的预测类别索引
+        origin_pred_class_indices = np.argmax(origin_test_tensor_array, axis=1)
+        adv_pred_class_indices = np.argmax(adv_test_tensor_array, axis=1)
+        standard_class_indices = np.argmax(standard_result_tensor_array, axis=1)
+
+        # 映射类别索引到 CIFAR-10 分类名称
+        origin_pred_class_names = [self.cifar10_classes[idx] for idx in origin_pred_class_indices]
+        adv_pred_class_names = [self.cifar10_classes[idx] for idx in adv_pred_class_indices]
+        standard_class_names = [self.cifar10_classes[idx] for idx in standard_class_indices]
+
+        # 打印每个样本的预测类别
+        for i in range(len(origin_test_tensor_array)):
+            print(
+                f"Sample {i}: Standard class:{standard_class_names[i]}, Origin predicted class - {origin_pred_class_names[i]}, adv predicted class - {adv_pred_class_names[i]}")
 
 
 if __name__ == '__main__':

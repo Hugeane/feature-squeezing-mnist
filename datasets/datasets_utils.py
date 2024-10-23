@@ -1,8 +1,6 @@
-import numpy as np
 from functools import reduce
-import pdb
 
-from .visualization import show_imgs_in_rows
+import numpy as np
 
 
 def get_next_class(Y_test):

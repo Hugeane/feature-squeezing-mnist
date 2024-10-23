@@ -49,7 +49,7 @@ def evaluate_robustness(params_str, model, Y, X, Y_adv, attack_string_list, X_ad
     RC_names = [ele.strip() for ele in params_str.split(';') if ele.strip() != '']
 
     accuracy_rows = []
-    fieldnames = ['RobustClassifier', 'legitimate_%d' % len(X)] + list(attack_string_list)
+    fieldnames = ['RobustClassifier', 'legitimate_%d' % len(X)] + attack_string_list
 
     selected_idx_vis = selected_idx_vis[:10]
     legitimate_examples = X[selected_idx_vis]
@@ -79,7 +79,7 @@ def evaluate_robustness(params_str, model, Y, X, Y_adv, attack_string_list, X_ad
 
         # Visualize the filtered images.
         if len(rows) > 1:
-            show_imgs_in_rows(rows, img_fpath)
+            show_imgs_in_rows(rows, str(img_fpath).replace('?', '-'))
 
     # Output in a CSV file.
     import csv

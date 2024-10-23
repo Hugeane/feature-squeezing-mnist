@@ -176,7 +176,7 @@ def main(argv=None):
     X_test_adv_discretized_list = []
     Y_test_adv_discretized_pred_list = []
 
-    attack_string_list = filter(lambda x: len(x) > 0, FLAGS.attacks.lower().split(';'))
+    attack_string_list = list(filter(lambda x: len(x) > 0, FLAGS.attacks.lower().split(';')))
     to_csv = []
 
     X_adv_cache_folder = os.path.join(FLAGS.result_folder, 'adv_examples')
@@ -240,9 +240,14 @@ def main(argv=None):
         dur_per_sample = duration / len(X_test_adv)
 
         # 5.0 Output predictions.
+        Y_test_pred = model.predict(X_test)
         Y_test_adv_pred = model.predict(X_test_adv)
         predictions_fpath = os.path.join(predictions_folder, "%s.npy" % str(attack_string).replace('?', '_'))
         np.save(predictions_fpath, Y_test_adv_pred, allow_pickle=False)
+
+        # print predictions
+        dataset.print_predict(origin_test_tensor_array=Y_test_pred, adv_test_tensor_array=Y_test_adv_pred,
+                              standard_result_tensor_array=Y_test_target)
 
         # 5.1 Evaluate the adversarial examples being discretized to uint8.
         print("\n---Attack (uint8): %s" % attack_string)
@@ -320,3 +325,9 @@ def main(argv=None):
 
 if __name__ == '__main__':
     main()
+    # attacks_str = 'fgsm?eps=0.0156;bim?eps=0.008&eps_iter=0.0012'
+    # attack_string_list = list(filter(lambda x: len(x) > 0, attacks_str.lower().split(';')))
+    # print(attack_string_list)
+    # for i, attack_name in enumerate(attack_string_list):
+    #     print(i)
+    #     print(attack_name)

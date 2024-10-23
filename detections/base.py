@@ -14,9 +14,9 @@ from functools import reduce
 from .feature_squeezing import FeatureSqueezingDetector
 from .magnet_cifar import MagNetDetector as MagNetDetectorCIFAR
 from .magnet_mnist import MagNetDetector as MagNetDetectorMNIST
+from utils.output import write_to_csv
 
 FLAGS = flags.FLAGS
-from utils.output import write_to_csv
 
 
 def get_tpr_fpr(true_labels, pred_labels):
@@ -71,7 +71,7 @@ class DetectionEvaluator:
     def get_attack_id(self, attack_name):
         return self.attack_name_id[attack_name]
 
-    def build_detection_dataset(self, X, Y_label, Y_pred, selected_idx, X_adv_list, Y_adv_pred_list, attack_names,
+    def build_detection_dataset(self, X, Y_label, Y_pred, selected_idx, X_adv_list, Y_adv_pred_list, attack_string_list,
                                 attack_string_hash, clip, Y_test_target_next, Y_test_target_ll):
 
         """
@@ -80,11 +80,11 @@ class DetectionEvaluator:
             14,     0,           0,             1
         """
 
-        self.attack_names = attack_names
+        self.attack_names = list(attack_string_list)
         self.attack_name_id = {}
         self.attack_name_id['legitimate'] = 0
-        for i, attack_name in enumerate(attack_names):
-            self.attack_name_id[attack_name] = i + 1
+        for i in range(len(self.attack_names)):
+            self.attack_name_id[self.attack_names[i]] = i + 1
 
         X_adv_all = np.concatenate(X_adv_list)
         X_leg_all = X[:len(X_adv_all)]
@@ -120,7 +120,7 @@ class DetectionEvaluator:
 
         success_adv_seq = [False] * len(X_leg_all)
         for i, Y_adv_pred in enumerate(Y_adv_pred_list):
-            attack_name = attack_names[i]
+            attack_name = self.attack_names[i]
             if 'targeted=ll' in attack_name:
                 success_adv_seq_attack = list(np.argmax(Y_adv_pred, axis=1) == np.argmax(Y_test_target_ll, axis=1))
             elif 'targeted=next' in attack_name:
@@ -132,7 +132,7 @@ class DetectionEvaluator:
 
         # 3. Tag the attack ID, 0 as legitimate.
         attack_id_seq = [0] * len(X_leg_all)
-        for i, attack_name in enumerate(attack_names):
+        for i, attack_name in enumerate(self.attack_names):
             attack_id_seq += [i + 1] * len(X_adv_list[0])
 
         assert len(X_detect) == len(train_test_seq) == len(misclassified_seq) == len(attack_id_seq)
@@ -142,8 +142,8 @@ class DetectionEvaluator:
 
         for i in range(len(X_detect)):
             attack_id = attack_id_seq[i]
-            misclassified = 1 if misclassified_seq[i] == True else 0
-            success = 1 if success_adv_seq[i] == True else 0
+            misclassified = 1 if misclassified_seq[i] is True else 0
+            success = 1 if success_adv_seq[i] is True else 0
             train = train_test_seq[i]
             rec = {'index': i, 'attack_id': attack_id, 'misclassified': misclassified, 'success': success,
                    'train': train}
