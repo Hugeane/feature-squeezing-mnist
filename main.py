@@ -4,7 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import os
-
+import time
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
@@ -324,7 +324,9 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
+    start = time.perf_counter()
     main()
+    print("function running time:", time.perf_counter() - start)
     # attacks_str = 'fgsm?eps=0.0156;bim?eps=0.008&eps_iter=0.0012'
     # attack_string_list = list(filter(lambda x: len(x) > 0, attacks_str.lower().split(';')))
     # print(attack_string_list)

@@ -53,8 +53,8 @@ def save_images(original_examples, adversarial_examples, target_vectors, output_
     # 还原为类别标签
     target_names = np.argmax(target_vectors, axis=1)
 
-    # 遍历每个样本，保存原始图片和对抗图片
-    for i in range(original_examples.shape[0]):
+    # 遍历每个样本，保存原始图片和对抗图片 只存10个
+    for i in range(10):
         # 获取原始样本和对抗样本
         original_img = original_examples[i]
         adversarial_img = adversarial_examples[i]

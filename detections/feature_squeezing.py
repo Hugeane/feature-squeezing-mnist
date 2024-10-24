@@ -185,7 +185,8 @@ class FeatureSqueezingDetector:
             vals_squeezed = []
             for squeezer_name in squeezers_name:
                 squeeze_func = self.get_squeezer_by_name(squeezer_name)
-                val_squeezed_norm = input_to_normalized_output(squeeze_func(X1))
+                squeeze_output = squeeze_func(X1)
+                val_squeezed_norm = input_to_normalized_output(squeeze_output)
                 vals_squeezed.append(val_squeezed_norm)
             distance = self.calculate_distance_max(val_orig_norm, vals_squeezed, metric_name)
         else:
@@ -196,25 +197,14 @@ class FeatureSqueezingDetector:
 
         return distance
 
-    # def eval_layer_output(self, X, layer_id):
-    #     layer_output = Model(inputs=self.model.layers[0].input, outputs=self.model.layers[layer_id].output)
-    #     return layer_output.predict(x=X, batch_size=X.shape[0], steps=1)
-
     def eval_layer_output(self, X, layer_id):
-        # 定义用于输出模型指定层的输出
-        layer_output = Model(inputs=self.model.layers[0].input, outputs=self.model.layers[layer_id].output)
-
-        # 定义 batch_size
-        batch_size = 10  # 你可以调整这个值
-
-        # 获取输入数据的样本数
-        n_samples = X.shape[0]
-
-        # 计算需要的步数 (steps)
-        steps = n_samples // batch_size
-
-        # 调用 predict 并指定 batch_size 和 steps
-        return layer_output.predict(X, batch_size=batch_size, steps=steps)
+        temp_model = self.model
+        temp_input = temp_model.layers[0].input
+        temp_output = temp_model.layers[layer_id].output
+        layer_output = Model(inputs=temp_input, outputs=temp_output)
+        batch_size = X.shape[0]
+        result = layer_output.predict(x=X, batch_size=batch_size, steps=1)
+        return result
 
     def output_distance_csv(self, X_list, field_name_list, csv_fpath):
         from utils.output import write_to_csv
