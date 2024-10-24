@@ -4,10 +4,12 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import sys, os
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from utils.squeeze import get_squeezer_by_name
 from utils.parameter_parser import parse_params
+
 
 class FeatureSqueezingRC:
     def __init__(self, keras_model, rc_name):
@@ -16,11 +18,11 @@ class FeatureSqueezingRC:
         subject, params = parse_params(rc_name)
         assert subject == 'FeatureSqueezing'
 
-        if params.has_key('squeezer'):
+        if 'squeezer' in params:
             self.filter = get_squeezer_by_name(params['squeezer'], 'python')
-        elif params.has_key('squeezers'):
+        elif 'squeezers' in params:
             squeezer_names = params['squeezers'].split(',')
-            self.filters = [ get_squeezer_by_name(squeezer_name, 'python') for squeezer_name in squeezer_names ]
+            self.filters = [get_squeezer_by_name(squeezer_name, 'python') for squeezer_name in squeezer_names]
 
             def filter_func(x, funcs):
                 x_p = x
@@ -29,8 +31,6 @@ class FeatureSqueezingRC:
                 return x_p
 
             self.filter = lambda x: filter_func(x, self.filters)
-
-
 
     def predict(self, X):
         X_filtered = self.filter(X)

@@ -11,20 +11,21 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 # Load external module: MagNet
-import sys, os
+import os
+import sys
+
 project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(project_dir)
 
 from externals.MagNet.setup_cifar import CIFAR
-from externals.MagNet.utils import prepare_data
-from externals.MagNet.worker import AEDetector, DBDetector, SimpleReformer, IdReformer, AttackData, Classifier, Operator, Evaluator
+from externals.MagNet.worker import AEDetector, DBDetector, SimpleReformer, IdReformer, Operator
 
 import numpy as np
 import os
 
-from keras.models import Model, Sequential
-from keras.layers import Dense, Dropout, Activation, Flatten, Lambda
-from keras.activations import softmax
+from tensorflow.keras.models import Model, Sequential
+from tensorflow.keras.layers import Lambda
+from tensorflow.keras.activations import softmax
 
 class ClassifierWrapper:
     def __init__(self, model):

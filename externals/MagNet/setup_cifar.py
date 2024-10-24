@@ -6,19 +6,15 @@
 ## contained in the LICENCE file in this directory.
 
 
-import tensorflow as tf
-import numpy as np
 import os
-import pickle
-import gzip
 import pickle
 import urllib.request
 
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, Activation, Flatten
-from keras.layers import Conv2D, MaxPooling2D
-from keras.utils import np_utils
-from keras.models import load_model
+import numpy as np
+from tensorflow.keras.layers import Conv2D, MaxPooling2D
+from tensorflow.keras.layers import Dense, Activation, Flatten
+from tensorflow.keras.models import Sequential
+
 
 def load_batch(fpath, label_key='labels'):
     f = open(fpath, 'rb')

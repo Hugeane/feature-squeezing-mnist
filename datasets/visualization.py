@@ -40,5 +40,5 @@ def show_imgs_in_rows(rows, fpath=None):
         y_offset += img_height + y_margin
 
     if fpath is not None:
-        new_im.save(fpath)
+        new_im.save(str(fpath).replace('?', '_'))
     new_im.show()

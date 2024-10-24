@@ -8,15 +8,13 @@
 ## Modified for MagNet's use.
 
 from __future__ import print_function
-from future.standard_library import install_aliases
-install_aliases()
 
 import numpy as np
 import os
 import gzip
 import urllib.request
 
-from keras.models import load_model
+from tensorflow.keras.models import load_model
 
 def extract_data(filename, num_images):
     with gzip.open(filename) as bytestream:

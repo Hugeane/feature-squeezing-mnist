@@ -139,7 +139,7 @@ def main(argv=None):
     X_test_adv_discretized_list = []
     Y_test_adv_discretized_pred_list = []
 
-    attack_string_list = filter(lambda x: len(x) > 0, FLAGS.attacks.lower().split(';'))
+    attack_string_list = list(filter(lambda x: len(x) > 0, FLAGS.attacks.lower().split(';')))
     to_csv = []
 
     X_adv_cache_folder = os.path.join(FLAGS.result_folder, 'adv_examples')
@@ -185,10 +185,6 @@ def main(argv=None):
                                                            attack_params, x_adv_cache_path,
                                                            attack_log_fpath=attack_log_fpath)
 
-        # save images
-        visualization.save_mnist_examples(original_examples=X_test, adversarial_examples=X_test_adv,
-                                          output_dir=os.path.join(FLAGS.result_folder, "images"))
-
         if FLAGS.clip > 0:
             # This is L-inf clipping.
             X_test_adv = np.clip(X_test_adv, min_clip, max_clip)
@@ -203,9 +199,17 @@ def main(argv=None):
         dur_per_sample = duration / len(X_test_adv)
 
         # 5.0 Output predictions.
+        Y_test_pred = model.predict(X_test)
         Y_test_adv_pred = model.predict(X_test_adv)
-        predictions_fpath = os.path.join(predictions_folder, "%s.npy" % attack_string)
+        predictions_fpath = os.path.join(predictions_folder, "%s.npy" % str(attack_string).replace('?', '_'))
         np.save(predictions_fpath, Y_test_adv_pred, allow_pickle=False)
+
+        # print predictions and get error prediction adversarial examples index
+        error_index = dataset.print_predict(origin_test_tensor_array=Y_test_pred, adv_test_tensor_array=Y_test_adv_pred,
+                                            standard_result_tensor_array=Y_test_target)
+        # save images
+        visualization.save_mnist_examples(original_examples=X_test, adversarial_examples=X_test_adv,
+                                          error_index=error_index)
 
         # 5.1 Evaluate the adversarial examples being discretized to uint8.
         print("\n---Attack (uint8): %s" % attack_string)
@@ -217,7 +221,7 @@ def main(argv=None):
 
         rec = evaluate_adversarial_examples(X_test, Y_test, X_test_adv_discret, Y_test_target.copy(), targeted,
                                             Y_test_adv_discret_pred)
-        rec['dataset_name'] = FLAGS.dataset_name
+        rec['dataset_name'] = 'MNIST'
         rec['model_name'] = FLAGS.model_name
         rec['attack_string'] = attack_string
         rec['duration_per_sample'] = dur_per_sample
@@ -259,7 +263,7 @@ def main(argv=None):
         Test the accuracy with robust classifiers.
         Evaluate the accuracy on all the legitimate examples.
         """
-        from robustness import evaluate_robustness
+        from robustness.base import evaluate_robustness
         result_folder_robustness = os.path.join(FLAGS.result_folder, "robustness")
         fname_prefix = "%s_%s_robustness" % (task_id, attack_string_hash)
         evaluate_robustness(FLAGS.robustness, model, Y_test_all, X_test_all, Y_test, attack_string_list,
@@ -273,12 +277,15 @@ def main(argv=None):
 
         result_folder_detection = os.path.join(FLAGS.result_folder, "detection")
         csv_fname = "%s_attacks_%s_detection.csv" % (task_id, attack_string_hash)
-        de = DetectionEvaluator(model, result_folder_detection, csv_fname, FLAGS.dataset_name)
+        de = DetectionEvaluator(model, result_folder_detection, csv_fname, 'MNIST')
         Y_test_all_pred = model.predict(X_test_all)
         de.build_detection_dataset(X_test_all, Y_test_all, Y_test_all_pred, selected_idx, X_test_adv_discretized_list,
                                    Y_test_adv_discretized_pred_list, attack_string_list, attack_string_hash, FLAGS.clip,
                                    Y_test_target_next, Y_test_target_ll)
-        de.evaluate_detections(FLAGS.detection)
+        detections_csv_fpath = os.path.join(FLAGS.result_folder,
+                                            "%s_dections_%s.csv" % \
+                                            (task_id, attack_string_hash))
+        de.evaluate_detections(FLAGS.detection, csv_path=detections_csv_fpath)
 
 
 if __name__ == '__main__':

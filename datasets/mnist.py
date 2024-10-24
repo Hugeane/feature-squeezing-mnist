@@ -19,6 +19,18 @@ class MNISTDataset:
         self.image_size = 28
         self.num_channels = 1
         self.num_classes = 10
+        self.mnist_classes = {
+            0: '0',
+            1: '1',
+            2: '2',
+            3: '3',
+            4: '4',
+            5: '5',
+            6: '6',
+            7: '7',
+            8: '8',
+            9: '9'
+        }
 
     # load MNIST dataset
 
@@ -124,6 +136,27 @@ class MNISTDataset:
         model.load_weights(model_weights_fpath)
         print("---Loaded MNIST-%s model.\n" % model_name)
         return model
+
+    def print_predict(self, origin_test_tensor_array, adv_test_tensor_array, standard_result_tensor_array):
+        # 假设 Y_test_adv_pred 是对抗样本的预测输出（概率向量），形状为 (batch_size, num_classes)
+        # 使用 np.argmax 获取每个样本的预测类别索引
+        origin_pred_class_indices = np.argmax(origin_test_tensor_array, axis=1)
+        adv_pred_class_indices = np.argmax(adv_test_tensor_array, axis=1)
+        standard_class_indices = np.argmax(standard_result_tensor_array, axis=1)
+
+        # 映射类别索引到 分类名称
+        origin_pred_class_names = [self.mnist_classes[idx] for idx in origin_pred_class_indices]
+        adv_pred_class_names = [self.mnist_classes[idx] for idx in adv_pred_class_indices]
+        standard_class_names = [self.mnist_classes[idx] for idx in standard_class_indices]
+
+        error_idx = []
+
+        # 打印每个样本的预测类别
+        for i in range(len(origin_test_tensor_array)):
+            if standard_class_names[i] != adv_pred_class_names[i]:
+                print(f"Sample {i}: Standard class:{standard_class_names[i]}, Origin predicted:{origin_pred_class_names[i]}, adv predicted:{adv_pred_class_names[i]}")
+                error_idx.append(i)
+        return error_idx
 
 
 if __name__ == '__main__':
